@@ -8,7 +8,8 @@
       "Bash(psql:*)",
       "Bash(where:*)",
       "Bash(dir \"C:\\Program Files\\PostgreSQL\")",
-      "Bash(dir \"C:\\PostgreSQL\")"
+      "Bash(dir \"C:\\PostgreSQL\")",
+      "Bash(ren gitignore .gitignore)"
     ],
     "deny": [],
     "ask": []
