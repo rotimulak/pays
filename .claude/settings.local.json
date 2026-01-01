@@ -11,7 +11,9 @@
       "Bash(dir \"C:\\PostgreSQL\")",
       "Bash(ren gitignore .gitignore)",
       "Bash(mv:*)",
-      "Bash(python -m src.main:*)"
+      "Bash(python -m src.main:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
