@@ -37,10 +37,55 @@ Response: `OK{InvId}` · Test: `IsTest=1`
 
 ## Docs
 
-- **Main:** [overview](docs/overview.md), [architecture](docs/architecture.md)
-- **Components:** [bot](docs/bot.md), [robokassa-adapter](docs/robokassa-adapter.md), [docusaurus](docs/docusaurus.md)
-- **Ops:** [security](docs/security.md), [deployment](docs/deployment.md)
-- **Ref:** [robokassa/](docs/robokassa/), [telegram-frameworks-comparison](docs/telegram-frameworks-comparison.md)
+### Main
+
+| Doc | Description |
+|-----|-------------|
+| [docs/index.md](docs/index.md) | Навигация по всей документации |
+| [docs/overview.md](docs/overview.md) | Обзор проекта, стек, структура |
+| [docs/architecture.md](docs/architecture.md) | Схема БД, жизненные циклы |
+
+### Components
+
+| Doc | Description |
+|-----|-------------|
+| [docs/bot.md](docs/bot.md) | Telegram-бот, команды, aiogram |
+| [docs/robokassa-adapter.md](docs/robokassa-adapter.md) | Платёжная интеграция |
+| [docs/docusaurus.md](docs/docusaurus.md) | Лендинг и пользовательская документация |
+
+### Operations
+
+| Doc | Description |
+|-----|-------------|
+| [docs/security.md](docs/security.md) | Валидация, rate limiting, HTTPS |
+| [docs/deployment.md](docs/deployment.md) | Docker, nginx, env |
+
+### References
+
+| Doc | Description |
+|-----|-------------|
+| [docs/robokassa/](docs/robokassa/) | Справочник Robokassa API |
+| [docs/roles/](docs/roles/) | Роли для AI-ассистентов |
+
+### Key Roles for AI
+
+| Role | File |
+|------|------|
+| Technical Writer | [docs/roles/technical-writer.md](docs/roles/technical-writer.md) |
+| Fullstack Developer | [docs/roles/fullstack-developer.md](docs/roles/fullstack-developer.md) |
+| System Analyst | [docs/roles/system-analyst.md](docs/roles/system-analyst.md) |
+
+### Milestones
+
+| Doc | Description |
+|-----|-------------|
+| [milestones/index.md](milestones/index.md) | План реализации по этапам |
+
+## Terminology
+
+| Short | Full |
+|-------|------|
+| M1, M2, ... | Milestone 1, Milestone 2, ... (этапы реализации) |
 
 ## Style
 
