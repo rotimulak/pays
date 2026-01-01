@@ -8,18 +8,18 @@
 
 ## Roadmap
 
-| # | Milestone | Результат | Зависимости |
-|---|-----------|-----------|-------------|
-| M1 | [Core Models & DB](m1-core-models-and-db.md) | БД, модели, миграции | — |
-| M2 | [Telegram Bot & Auth](m2-telegram-bot-auth.md) | Бот с авторизацией | M1 |
-| M3 | [Tariffs & Invoices](m3-tariffs-and-invoices.md) | Выбор тарифа, создание счёта | M2 |
-| M4 | [Mock Payment Provider](m4-mock-payment-provider.md) | Mock платёжная система | M3 |
-| M5 | [Billing Flow](m5-billing-flow.md) | Полный цикл оплаты | M4 |
-| M6 | [Robokassa Provider](m6-robokassa-provider.md) | Реальные платежи | M5 |
-| M7 | [Promo Codes](m7-promo-codes.md) | Промокоды и скидки | M5 |
-| M8 | [Token Spending](m8-token-spending.md) | Расходование токенов | M5 |
-| M9 | [Subscription Management](m9-subscription-management.md) | Автопродление, уведомления | M8 |
-| M10 | [Docker & Deploy](m10-docker-and-deploy.md) | Production-ready деплой | M9 |
+| # | Milestone | Результат | Зависимости | Декомпозиция |
+|---|-----------|-----------|-------------|--------------|
+| M1 | [Core Models & DB](m1-core-models-and-db.md) | БД, модели, миграции | — | [📋 Epics & Tasks](m1/) |
+| M2 | [Telegram Bot & Auth](m2-telegram-bot-auth.md) | Бот с авторизацией | M1 | [📋 Epics & Tasks](m2/) |
+| M3 | [Tariffs & Invoices](m3-tariffs-and-invoices.md) | Выбор тарифа, создание счёта | M2 | [📋 Epics & Tasks](m3/) |
+| M4 | [Mock Payment Provider](m4-mock-payment-provider.md) | Mock платёжная система | M3 | [📋 Epics & Tasks](m4/) |
+| M5 | [Billing Flow](m5-billing-flow.md) | Полный цикл оплаты | M4 | [📋 Epics & Tasks](m5/) |
+| M6 | [Robokassa Provider](m6-robokassa-provider.md) | Реальные платежи | M5 | — |
+| M7 | [Promo Codes](m7-promo-codes.md) | Промокоды и скидки | M5 | — |
+| M8 | [Token Spending](m8-token-spending.md) | Расходование токенов | M5 | — |
+| M9 | [Subscription Management](m9-subscription-management.md) | Автопродление, уведомления | M8 | — |
+| M10 | [Docker & Deploy](m10-docker-and-deploy.md) | Production-ready деплой | M9 | — |
 
 ---
 
