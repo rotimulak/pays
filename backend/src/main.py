@@ -8,7 +8,7 @@ from aiogram import Bot
 from aiogram.types import BotCommand
 
 from src.bot import create_bot, create_dispatcher
-from src.bot.handlers import buy, help, profile, start, tariffs
+from src.bot.handlers import balance, buy, help, history, profile, promo, start, tariffs
 from src.bot.middlewares import AuthMiddleware, DbSessionMiddleware
 from src.core.config import settings
 
@@ -28,6 +28,7 @@ async def set_commands(bot: Bot) -> None:
         BotCommand(command="tariffs", description="Тарифы"),
         BotCommand(command="balance", description="Баланс"),
         BotCommand(command="history", description="История"),
+        BotCommand(command="promo", description="Ввести промокод"),
         BotCommand(command="help", description="Помощь"),
     ]
     await bot.set_my_commands(commands)
@@ -60,6 +61,9 @@ async def main() -> None:
     dp.include_router(profile.router)
     dp.include_router(tariffs.router)
     dp.include_router(buy.router)
+    dp.include_router(balance.router)
+    dp.include_router(history.router)
+    dp.include_router(promo.router)
     dp.include_router(help.router)
 
     # Register hooks

@@ -9,7 +9,9 @@
       "Bash(where:*)",
       "Bash(dir \"C:\\Program Files\\PostgreSQL\")",
       "Bash(dir \"C:\\PostgreSQL\")",
-      "Bash(ren gitignore .gitignore)"
+      "Bash(ren gitignore .gitignore)",
+      "Bash(mv:*)",
+      "Bash(python -m src.main:*)"
     ],
     "deny": [],
     "ask": []
