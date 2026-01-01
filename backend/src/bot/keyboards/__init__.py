@@ -1,0 +1,18 @@
+"""Bot keyboards."""
+
+from src.bot.keyboards.main_menu import get_main_menu
+from src.bot.keyboards.payment import (
+    get_payment_keyboard,
+    get_payment_success_keyboard,
+    get_pending_payment_keyboard,
+)
+from src.bot.keyboards.tariffs import get_empty_tariffs_keyboard, get_tariffs_keyboard
+
+__all__ = [
+    "get_empty_tariffs_keyboard",
+    "get_main_menu",
+    "get_payment_keyboard",
+    "get_payment_success_keyboard",
+    "get_pending_payment_keyboard",
+    "get_tariffs_keyboard",
+]

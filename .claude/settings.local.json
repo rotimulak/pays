@@ -4,7 +4,11 @@
       "Bash(git init:*)",
       "Bash(git remote add:*)",
       "Bash(mkdir:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(psql:*)",
+      "Bash(where:*)",
+      "Bash(dir \"C:\\Program Files\\PostgreSQL\")",
+      "Bash(dir \"C:\\PostgreSQL\")"
     ],
     "deny": [],
     "ask": []

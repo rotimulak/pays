@@ -35,6 +35,14 @@ Response: `OK{InvId}` · Test: `IsTest=1`
 
 `TELEGRAM_BOT_TOKEN` `ROBOKASSA_MERCHANT_LOGIN` `ROBOKASSA_PASSWORD_1` `ROBOKASSA_PASSWORD_2` `ROBOKASSA_IS_TEST` `DATABASE_URL` `WEBHOOK_BASE_URL`
 
+## Local Development
+
+**PostgreSQL:**
+- Path: `C:\Program Files\PostgreSQL\17\bin\`
+- Host: `localhost:5432`
+- User: `postgres`
+- Database: `telegram_billing`
+
 ## Docs
 
 ### Main
