@@ -10,24 +10,15 @@ from src.bot.callbacks.invoice import InvoiceCallback
 from src.bot.callbacks.tariff import TariffCallback
 from src.bot.keyboards.payment import get_payment_keyboard
 from src.bot.keyboards.tariffs import get_tariffs_keyboard
-from src.core.config import settings
 from src.core.exceptions import NotFoundError, ValidationError
 from src.db.models.user import User
 from src.services.invoice_service import InvoiceService
+from src.services.payment_service import PaymentService
 from src.services.tariff_service import TariffService
 
 logger = logging.getLogger(__name__)
 
 router = Router(name="buy")
-
-
-def generate_mock_payment_url(inv_id: int) -> str:
-    """Generate mock payment URL for testing.
-
-    In M4+ this will be replaced with real Robokassa URL.
-    """
-    base_url = settings.webhook_base_url.rstrip("/")
-    return f"{base_url}/mock-pay/{inv_id}"
 
 
 @router.callback_query(TariffCallback.filter(F.action == "select"))
@@ -41,7 +32,7 @@ async def process_tariff_selection(
 
     1. Get tariff by ID from callback_data
     2. Create or get existing pending invoice
-    3. Generate payment URL (mock for now)
+    3. Generate payment URL via PaymentService
     4. Show invoice details with "Pay" button
     """
     message = callback.message
@@ -51,6 +42,7 @@ async def process_tariff_selection(
 
     tariff_service = TariffService(session)
     invoice_service = InvoiceService(session)
+    payment_service = PaymentService(session)
 
     try:
         # Get tariff details
@@ -65,13 +57,8 @@ async def process_tariff_selection(
             tariff_id=callback_data.tariff_id,
         )
 
-        # Generate mock payment URL
-        payment_url = generate_mock_payment_url(invoice.inv_id)
-
-        # Update invoice with payment URL if needed
-        if invoice.payment_url != payment_url:
-            invoice.payment_url = payment_url
-            await session.flush()
+        # Generate payment URL via PaymentService
+        payment_url = await payment_service.create_payment_url(invoice.id)
 
         # Get invoice DTO for display
         invoice_dto = await invoice_service.get_invoice_for_payment(invoice.id)

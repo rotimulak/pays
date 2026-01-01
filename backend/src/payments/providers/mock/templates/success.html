@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата успешна</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 48px 32px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: #d1fae5;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 40px;
+        }
+        h1 {
+            font-size: 24px;
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+        p {
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        .amount {
+            font-size: 32px;
+            font-weight: 700;
+            color: #10b981;
+            margin: 24px 0;
+        }
+        .info {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            text-align: left;
+        }
+        .info .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .info .row:last-child {
+            margin-bottom: 0;
+        }
+        .btn {
+            display: inline-block;
+            background: #10b981;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 16px;
+        }
+        .btn:hover {
+            background: #059669;
+        }
+        .footer {
+            margin-top: 24px;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">✓</div>
+        <h1>Оплата успешна!</h1>
+        <p>Ваш платёж обработан</p>
+
+        <div class="amount">{{ out_sum }} ₽</div>
+
+        <div class="info">
+            <div class="row">
+                <span>Счёт №:</span>
+                <span>{{ inv_id }}</span>
+            </div>
+        </div>
+
+        <p>Токены и подписка добавлены на ваш аккаунт.</p>
+        <p>Вернитесь в Telegram для продолжения.</p>
+
+        <div class="footer">
+            Это тестовый платёж. Реальные деньги не списаны.
+        </div>
+    </div>
+</body>
+</html>

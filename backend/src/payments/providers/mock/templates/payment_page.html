@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Оплата - Mock Payment</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .header .badge {
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .amount {
+            text-align: center;
+            margin: 32px 0;
+        }
+        .amount .value {
+            font-size: 48px;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .amount .currency {
+            font-size: 24px;
+            color: #6b7280;
+        }
+        .details {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .details .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .details .row:last-child {
+            margin-bottom: 0;
+        }
+        .details .label {
+            color: #6b7280;
+        }
+        .details .value {
+            color: #1f2937;
+            font-weight: 500;
+        }
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+        }
+        .btn-pay {
+            background: #10b981;
+            color: white;
+        }
+        .btn-pay:hover {
+            background: #059669;
+        }
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 24px;
+            color: #9ca3af;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h1>💳 Mock Payment</h1>
+            <span class="badge">Тестовый режим</span>
+        </div>
+
+        <div class="amount">
+            <span class="value">{{ out_sum }}</span>
+            <span class="currency">₽</span>
+        </div>
+
+        <div class="details">
+            <div class="row">
+                <span class="label">Описание:</span>
+                <span class="value">{{ description }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Счёт №:</span>
+                <span class="value">{{ inv_id }}</span>
+            </div>
+            <div class="row">
+                <span class="label">Получатель:</span>
+                <span class="value">{{ merchant_login }}</span>
+            </div>
+        </div>
+
+        <div class="buttons">
+            <form action="/mock-payment/process" method="post">
+                <input type="hidden" name="OutSum" value="{{ out_sum }}">
+                <input type="hidden" name="InvId" value="{{ inv_id }}">
+                <input type="hidden" name="Shp_invoice_id" value="{{ shp_invoice_id }}">
+                <input type="hidden" name="Shp_user_id" value="{{ shp_user_id }}">
+                <button type="submit" class="btn btn-pay">✓ Оплатить {{ out_sum }} ₽</button>
+            </form>
+            <form action="/mock-payment/cancel" method="post">
+                <input type="hidden" name="InvId" value="{{ inv_id }}">
+                <input type="hidden" name="Shp_invoice_id" value="{{ shp_invoice_id }}">
+                <button type="submit" class="btn btn-cancel">✕ Отменить</button>
+            </form>
+        </div>
+
+        <div class="footer">
+            Это тестовая страница оплаты.<br>
+            Реальные деньги не списываются.
+        </div>
+    </div>
+</body>
+</html>

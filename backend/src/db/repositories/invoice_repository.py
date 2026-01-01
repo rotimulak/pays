@@ -168,3 +168,27 @@ class InvoiceRepository:
 
         result = await self.session.execute(stmt)
         return result.rowcount
+
+    async def get_expiring_invoices(
+        self,
+        before: datetime,
+        limit: int = 100,
+    ) -> list[Invoice]:
+        """Get pending invoices that will be expired.
+
+        Useful for dry-run mode.
+
+        Args:
+            before: Get invoices with expires_at before this time
+            limit: Maximum number of invoices to return
+
+        Returns:
+            List of invoices that would be expired
+        """
+        result = await self.session.execute(
+            select(Invoice)
+            .where(Invoice.status == InvoiceStatus.PENDING)
+            .where(Invoice.expires_at < before)
+            .limit(limit)
+        )
+        return list(result.scalars().all())

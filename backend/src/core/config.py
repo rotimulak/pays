@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,7 +27,13 @@ class Settings(BaseSettings):
         description="Telegram Bot API token",
     )
 
-    # Robokassa
+    # Payment provider selection
+    payment_provider: Literal["mock", "robokassa"] = Field(
+        default="mock",
+        description="Payment provider to use",
+    )
+
+    # Robokassa settings
     robokassa_merchant_login: str = Field(
         ...,
         min_length=1,
@@ -46,6 +54,20 @@ class Settings(BaseSettings):
         description="Use Robokassa test mode",
     )
 
+    # Mock provider settings (same structure as Robokassa for compatibility)
+    mock_merchant_login: str = Field(
+        default="test_merchant",
+        description="Mock merchant login",
+    )
+    mock_password_1: str = Field(
+        default="test_password_1",
+        description="Mock password for payment URL generation",
+    )
+    mock_password_2: str = Field(
+        default="test_password_2",
+        description="Mock password for webhook validation",
+    )
+
     # Webhooks
     webhook_base_url: str = Field(
         ...,
@@ -57,6 +79,12 @@ class Settings(BaseSettings):
     support_username: str = Field(
         default="support",
         description="Telegram support username (without @)",
+    )
+
+    # Invoice settings
+    invoice_ttl_hours: int = Field(
+        default=24,
+        description="Hours until pending invoice expires",
     )
 
 

@@ -15,10 +15,10 @@
 | M3 | [Tariffs & Invoices](m3-tariffs-and-invoices.md) | Выбор тарифа, создание счёта | M2 | [📋 Epics & Tasks](m3/) |
 | M4 | [Mock Payment Provider](m4-mock-payment-provider.md) | Mock платёжная система | M3 | [📋 Epics & Tasks](m4/) |
 | M5 | [Billing Flow](m5-billing-flow.md) | Полный цикл оплаты | M4 | [📋 Epics & Tasks](m5/) |
-| M6 | [Robokassa Provider](m6-robokassa-provider.md) | Реальные платежи | M5 | — |
-| M7 | [Promo Codes](m7-promo-codes.md) | Промокоды и скидки | M5 | — |
-| M8 | [Token Spending](m8-token-spending.md) | Расходование токенов | M5 | — |
-| M9 | [Subscription Management](m9-subscription-management.md) | Автопродление, уведомления | M8 | — |
+| M6 | [Robokassa Provider](m6-robokassa-provider.md) | Реальные платежи | M5 | [📋 Epics & Tasks](m6/) |
+| M7 | [Promo Codes](m7-promo-codes.md) | Промокоды и скидки | M5 | [📋 Epics & Tasks](m7/) |
+| M8 | [Token Spending](m8-token-spending.md) | Расходование токенов | M5 | [📋 Epics & Tasks](m8/) |
+| M9 | [Subscription Management](m9-subscription-management.md) | Автопродление, уведомления | M8 | [📋 Epics & Tasks](m9/) |
 | M10 | [Docker & Deploy](m10-docker-and-deploy.md) | Production-ready деплой | M9 | — |
 
 ---

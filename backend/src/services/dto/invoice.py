@@ -9,6 +9,36 @@ from pydantic import BaseModel, computed_field
 from src.db.models.invoice import InvoiceStatus
 
 
+class InvoicePreviewDTO(BaseModel):
+    """Preview before invoice creation."""
+
+    tariff_name: str
+    original_amount: Decimal
+    final_amount: Decimal
+    discount_info: str | None
+    tokens: int
+    bonus_tokens: int
+    subscription_days: int
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def original_amount_display(self) -> str:
+        """Format original amount."""
+        return f"{self.original_amount:.0f} ₽"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def final_amount_display(self) -> str:
+        """Format final amount."""
+        return f"{self.final_amount:.0f} ₽"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def has_discount(self) -> bool:
+        """Check if there's any discount or bonus."""
+        return self.final_amount < self.original_amount or self.bonus_tokens > 0
+
+
 class InvoiceDTO(BaseModel):
     """DTO for invoice display."""
 

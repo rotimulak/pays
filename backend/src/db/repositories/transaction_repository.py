@@ -79,6 +79,30 @@ class TransactionRepository:
         )
         return list(result.scalars().all())
 
+    async def count_by_user(
+        self,
+        user_id: int,
+        type_filter: TransactionType | None = None,
+    ) -> int:
+        """Count user's transactions with optional type filter.
+
+        Args:
+            user_id: User's Telegram ID
+            type_filter: Filter by transaction type
+
+        Returns:
+            Total count of transactions
+        """
+        query = select(func.count()).select_from(Transaction).where(
+            Transaction.user_id == user_id
+        )
+
+        if type_filter is not None:
+            query = query.where(Transaction.type == type_filter)
+
+        result = await self.session.execute(query)
+        return result.scalar_one()
+
     async def get_user_stats(self, user_id: int) -> TransactionStats:
         """Get aggregated stats: total_topup, total_spent, etc.
 

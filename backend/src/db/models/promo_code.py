@@ -23,6 +23,7 @@ class DiscountType(enum.Enum):
 
     PERCENT = "percent"
     FIXED = "fixed"
+    BONUS_TOKENS = "bonus_tokens"
 
 
 class PromoCode(Base):
