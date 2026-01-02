@@ -8,7 +8,7 @@ echo "=== HHHelper Deployment ==="
 
 # Configuration
 APP_DIR="/opt/hhhelper"
-REPO_URL="https://github.com/YOUR_USERNAME/pays.git"  # Update this!
+REPO_URL="https://github.com/rotimulak/pays.git"  # Update this!
 
 # Colors
 RED='\033[0;31m'
@@ -69,7 +69,7 @@ ln -sf /etc/nginx/sites-available/hhhelper /etc/nginx/sites-enabled/
 nginx -t
 
 echo "9. Getting SSL certificate..."
-certbot --nginx -d hhhelper.arsenal0.space --non-interactive --agree-tos --email your@email.com || true
+certbot --nginx -d hhhelper.arsenal0.space --non-interactive --agree-tos --email rotimulak@gmail.com || true
 
 echo "10. Restarting nginx..."
 systemctl restart nginx
