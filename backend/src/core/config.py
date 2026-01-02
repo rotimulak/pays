@@ -103,6 +103,16 @@ class Settings(BaseSettings):
         description="Rate limit period in seconds",
     )
 
+    # Logging
+    log_level: str = Field(
+        default="INFO",
+        description="Log level (DEBUG, INFO, WARNING, ERROR)",
+    )
+    log_format: Literal["json", "standard"] = Field(
+        default="standard",
+        description="Log format (json for production, standard for dev)",
+    )
+
     # Subscription settings
     subscription_renewal_days: int = Field(
         default=30,

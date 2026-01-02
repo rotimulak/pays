@@ -1,14 +1,14 @@
 # Деплой
 
-## Быстрый старт
+## Быстрый старт (локально)
 
 ```bash
 # Клонировать репозиторий
 git clone https://github.com/your-org/telegram-billing-template.git
-cd telegram-billing-template
+cd telegram-billing-template/backend
 
 # Скопировать переменные окружения
-cp .env.example .env
+cp ../.env.example .env
 
 # Заполнить .env (см. раздел ниже)
 
@@ -18,30 +18,161 @@ docker-compose up -d
 
 ---
 
-## Переменные окружения
-
-| Переменная | Описание |
-|------------|----------|
-| `TELEGRAM_BOT_TOKEN` | Токен бота от @BotFather |
-| `ROBOKASSA_LOGIN` | Логин магазина в Робокассе |
-| `ROBOKASSA_PASSWORD1` | Пароль #1 для формирования ссылки |
-| `ROBOKASSA_PASSWORD2` | Пароль #2 для проверки webhook'ов |
-| `DATABASE_URL` | Строка подключения к PostgreSQL |
-| `WEBHOOK_BASE_URL` | Публичный URL сервера для webhook'ов |
-
----
-
-## Docker
-
-Проект включает готовые Dockerfile для backend и docs:
+## Структура Docker
 
 ```
 telegram-billing-template/
 ├── backend/
-│   └── Dockerfile
-├── docs/
-│   └── Dockerfile
-└── docker-compose.yml
+│   ├── Dockerfile              # Multi-stage build
+│   ├── docker-compose.yml      # Development
+│   ├── docker-compose.prod.yml # Production overrides
+│   └── entrypoint.sh           # Startup script
+├── deploy/
+│   ├── deploy.sh               # Deployment script
+│   └── nginx/
+│       └── hhhelper.conf       # Nginx config
+└── .env.example                # Environment template
+```
+
+---
+
+## Режимы запуска
+
+Приложение поддерживает несколько режимов:
+
+| Режим | Команда | Описание |
+|-------|---------|----------|
+| `api` | `docker-compose up api` | Только FastAPI сервер |
+| `bot` | `docker-compose up bot` | Только Telegram бот (polling) |
+| `all` | Оба сервиса | Бот + API вместе |
+| `migrate` | `./entrypoint.sh migrate` | Только миграции |
+
+---
+
+## Переменные окружения
+
+### Обязательные
+
+| Переменная | Описание |
+|------------|----------|
+| `TELEGRAM_BOT_TOKEN` | Токен бота от @BotFather |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `WEBHOOK_BASE_URL` | Публичный HTTPS URL для webhook'ов |
+
+### Robokassa (опционально)
+
+| Переменная | Описание |
+|------------|----------|
+| `ROBOKASSA_MERCHANT_LOGIN` | Логин магазина |
+| `ROBOKASSA_PASSWORD_1` | Пароль для генерации ссылок |
+| `ROBOKASSA_PASSWORD_2` | Пароль для проверки webhook'ов |
+| `ROBOKASSA_IS_TEST` | Тестовый режим (1/0) |
+
+### Docker
+
+| Переменная | Описание |
+|------------|----------|
+| `POSTGRES_USER` | Пользователь PostgreSQL |
+| `POSTGRES_PASSWORD` | Пароль PostgreSQL |
+| `POSTGRES_DB` | Имя базы данных |
+
+### Логирование
+
+| Переменная | Описание |
+|------------|----------|
+| `LOG_LEVEL` | DEBUG, INFO, WARNING, ERROR |
+| `LOG_FORMAT` | `json` (production) / `standard` (dev) |
+
+---
+
+## Production деплой
+
+### 1. Подготовка сервера
+
+```bash
+# Установить Docker
+apt-get update
+apt-get install -y docker.io docker-compose nginx certbot python3-certbot-nginx
+systemctl enable docker
+```
+
+### 2. Клонирование и настройка
+
+```bash
+mkdir -p /opt/hhhelper
+cd /opt/hhhelper
+git clone https://github.com/YOUR_USERNAME/pays.git .
+cd backend
+cp ../.env.example .env
+nano .env  # Заполнить переменные
+```
+
+### 3. Запуск
+
+```bash
+# Development (с логами)
+docker-compose up
+
+# Production (фоновый режим + production overrides)
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+### 4. Настройка Nginx
+
+```bash
+cp deploy/nginx/hhhelper.conf /etc/nginx/sites-available/
+ln -sf /etc/nginx/sites-available/hhhelper.conf /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+```
+
+### 5. SSL сертификат
+
+```bash
+certbot --nginx -d your-domain.com
+```
+
+---
+
+## Health Checks
+
+| Endpoint | Описание |
+|----------|----------|
+| `GET /health` | Liveness probe — сервис жив |
+| `GET /ready` | Readiness probe — БД подключена |
+
+Пример:
+```bash
+curl https://hhhelper.arsenal0.space/health
+# {"status":"ok","service":"hhhelper-api"}
+```
+
+---
+
+## Полезные команды
+
+```bash
+# Логи
+docker-compose logs -f
+docker-compose logs -f api
+docker-compose logs -f bot
+
+# Перезапуск
+docker-compose restart api
+docker-compose restart bot
+
+# Остановка
+docker-compose down
+
+# Пересборка
+docker-compose build --no-cache
+docker-compose up -d
+
+# Миграции вручную
+docker-compose exec api alembic upgrade head
+
+# Shell в контейнере
+docker-compose exec api bash
 ```
 
 ---
@@ -51,26 +182,59 @@ telegram-billing-template/
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name bot.example.com;
+    server_name hhhelper.arsenal0.space;
 
-    ssl_certificate /etc/letsencrypt/live/bot.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/bot.example.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/hhhelper.arsenal0.space/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/hhhelper.arsenal0.space/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
-    ssl_prefer_server_ciphers off;
-
-    # HSTS
-    add_header Strict-Transport-Security "max-age=63072000" always;
+    ssl_prefer_server_ciphers on;
 
     location / {
-        proxy_pass http://backend:8000;
+        proxy_pass http://127.0.0.1:8001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /health {
+        proxy_pass http://127.0.0.1:8001/health;
+        access_log off;
     }
 }
 ```
+
+---
+
+## Troubleshooting
+
+### Контейнер не стартует
+
+```bash
+# Проверить логи
+docker-compose logs api
+
+# Проверить статус БД
+docker-compose exec db pg_isready
+```
+
+### Миграции не применяются
+
+```bash
+# Запустить вручную
+docker-compose exec api alembic upgrade head
+
+# Проверить текущую версию
+docker-compose exec api alembic current
+```
+
+### Бот не отвечает
+
+1. Проверить `TELEGRAM_BOT_TOKEN`
+2. Проверить логи: `docker-compose logs bot`
+3. Убедиться, что бот не запущен где-то ещё
 
 ---
 
@@ -80,33 +244,6 @@ server {
 - **Робокасса** отправляет webhook'и только на HTTPS endpoints
 - Минимум **TLS 1.2** (рекомендуется TLS 1.3)
 - Сертификат: **Let's Encrypt** (бесплатный) или коммерческий
-
----
-
-## CI/CD
-
-Опционально: GitHub Actions для автоматического деплоя.
-
-Рекомендуемый pipeline:
-1. Lint и тесты
-2. Сборка Docker-образов
-3. Push в registry
-4. Deploy на сервер
-
----
-
-## Масштабирование
-
-### Single instance
-
-- In-memory rate limiting достаточен
-- SQLite или PostgreSQL
-
-### Multiple instances
-
-- Rate limiting через **Redis**
-- PostgreSQL обязателен
-- Shared session storage
 
 ---
 

@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 
 from src.api.middleware.rate_limit import RateLimitMiddleware
-from src.api.routes import tokens, webhook
+from src.api.routes import health, tokens, webhook
 from src.core.config import settings
 from src.payments.providers.mock.router import router as mock_payment_router
 
@@ -24,6 +24,7 @@ def create_api() -> FastAPI:
     )
 
     # Include routers
+    app.include_router(health.router)
     app.include_router(webhook.router)
     app.include_router(tokens.router)
     app.include_router(mock_payment_router)

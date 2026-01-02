@@ -6,25 +6,38 @@ services:
     build: .
     container_name: hhhelper-api
     restart: unless-stopped
+    command: ["api"]
     ports:
       - "8001:8000"
     env_file:
       - .env
+    environment:
+      - APP_MODE=api
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - hhhelper-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # Telegram bot (polling mode)
   bot:
     build: .
     container_name: hhhelper-bot
     restart: unless-stopped
-    command: ["python", "-m", "src.main"]
+    command: ["bot"]
     env_file:
       - .env
+    environment:
+      - APP_MODE=bot
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - hhhelper-net
 
@@ -43,6 +56,11 @@ services:
       - "5433:5432"  # Exposed on 5433 to avoid conflicts
     networks:
       - hhhelper-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-telegram_billing}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

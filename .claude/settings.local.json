@@ -27,7 +27,8 @@
       "Bash(ssh-keygen:*)",
       "Bash(ssh-copy-id:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

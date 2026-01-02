@@ -1,8 +1,6 @@
 """Bot entry point."""
 
 import asyncio
-import logging
-import sys
 
 from aiogram import Bot
 from aiogram.types import BotCommand
@@ -11,13 +9,11 @@ from src.bot import create_bot, create_dispatcher
 from src.bot.handlers import balance, buy, help, history, profile, promo, start, tariffs
 from src.bot.middlewares import AuthMiddleware, DbSessionMiddleware
 from src.core.config import settings
+from src.core.logging import get_logger, setup_logging
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    stream=sys.stdout,
-)
-logger = logging.getLogger(__name__)
+# Setup logging
+setup_logging()
+logger = get_logger(__name__)
 
 
 async def set_commands(bot: Bot) -> None:
