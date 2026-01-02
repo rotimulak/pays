@@ -20,6 +20,7 @@
 | M8 | [Token Spending](m8-token-spending.md) | Расходование токенов | M5 | [📋 Epics & Tasks](m8/) |
 | M9 | [Subscription Management](m9-subscription-management.md) | Автопродление, уведомления | M8 | [📋 Epics & Tasks](m9/) |
 | M10 | [Docker & Deploy](m10-docker-and-deploy.md) | Production-ready деплой | M9 | — |
+| M11 | [Simplified Payment UX](m11-simplified-ux.md) | Упрощённое меню, скрытые тарифы | M9 | — |
 
 ---
 
@@ -30,7 +31,9 @@ M1 ──> M2 ──> M3 ──> M4 ──> M5 ──┬──> M6
                                  │
                                  ├──> M7
                                  │
-                                 └──> M8 ──> M9 ──> M10
+                                 └──> M8 ──> M9 ──┬──> M10
+                                                  │
+                                                  └──> M11
 ```
 
 ---
@@ -48,15 +51,16 @@ M1 ──> M2 ──> M3 ──> M4 ──> M5 ──┬──> M6
 
 | Milestone | Статус |
 |-----------|--------|
-| M1 | 🔲 Not started |
-| M2 | 🔲 Not started |
-| M3 | 🔲 Not started |
-| M4 | 🔲 Not started |
-| M5 | 🔲 Not started |
+| M1 | ✅ Done |
+| M2 | ✅ Done |
+| M3 | ✅ Done |
+| M4 | ✅ Done |
+| M5 | ✅ Done |
 | M6 | 🔲 Not started |
-| M7 | 🔲 Not started |
-| M8 | 🔲 Not started |
-| M9 | 🔲 Not started |
-| M10 | 🔲 Not started |
+| M7 | ✅ Done |
+| M8 | ✅ Done |
+| M9 | ✅ Done |
+| M10 | ✅ Done |
+| M11 | 🔲 Not started |
 
 Легенда: 🔲 Not started | 🔄 In progress | ✅ Done

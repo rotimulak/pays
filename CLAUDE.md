@@ -2,100 +2,51 @@
 
 ## Overview
 
-**Telegram Billing Template** — SaaS-шаблон: Telegram-бот + Robokassa.
-Статус: только документация, кода нет.
+**Telegram Billing Template** — SaaS: Telegram-бот + Robokassa.
+**Статус:** M1-M10 done, deployed. M6/M11 not started.
 
 ## Stack
 
-**Backend:** Python, aiogram 3.x, FastAPI, SQLAlchemy 2.x (async), PostgreSQL, Alembic
-**Frontend:** Docusaurus 3.x, React, Tailwind CSS
-**Deploy:** Docker + docker-compose
+Python: aiogram 3.x, FastAPI, SQLAlchemy 2.x async, PostgreSQL, Alembic
+Frontend: Docusaurus 3.x | Deploy: Docker
 
 ## Structure
 
 ```
 backend/src/
-├── payments/          # router.py (webhooks), service.py, providers/robokassa/
-├── models/            # users, invoices, transactions, tariffs
-└── bot/               # Telegram handlers
+├── bot/           # handlers/, callbacks/, keyboards/, states/, middlewares/
+├── api/           # routes/ (webhook, tokens, health), middleware/, schemas/
+├── services/      # billing, payment, subscription, token, promo, notification
+├── db/            # models/, repositories/, session.py
+├── payments/      # providers/mock/
+├── tasks/         # subscription_tasks.py
+└── core/          # config, logging, exceptions
 ```
 
-**Flow:** `/pay` → Invoice → Robokassa → Webhook → Credit tokens
+## Flow
 
-## Robokassa Signatures
+`/start` → `/buy` → Tariff → Invoice → Payment → Webhook → Tokens/Subscription
 
-| Operation | Formula |
-|-----------|---------|
-| Init | `MD5(MerchantLogin:OutSum:InvId:Password_1)` |
-| Webhook | `MD5(OutSum:InvId:Password_2:Shp_*)` (Shp_* sorted) |
+## Robokassa
 
-Response: `OK{InvId}` · Test: `IsTest=1`
+Init: `MD5(Login:Sum:InvId:Pass1)` | Webhook: `MD5(Sum:InvId:Pass2:Shp_*)` → `OK{InvId}`
 
 ## Env
 
-`TELEGRAM_BOT_TOKEN` `ROBOKASSA_MERCHANT_LOGIN` `ROBOKASSA_PASSWORD_1` `ROBOKASSA_PASSWORD_2` `ROBOKASSA_IS_TEST` `DATABASE_URL` `WEBHOOK_BASE_URL`
+`TELEGRAM_BOT_TOKEN` `DATABASE_URL` `WEBHOOK_BASE_URL` `ROBOKASSA_*` (LOGIN, PASS1, PASS2, IS_TEST)
 
-## Local Development
+## Local Dev
 
-**PostgreSQL:**
-- Path: `C:\Program Files\PostgreSQL\17\bin\`
-- Host: `localhost:5432`
-- User: `postgres`
-- Database: `telegram_billing`
+PostgreSQL: `localhost:5432` user `postgres` db `telegram_billing`
+Path: `C:\Program Files\PostgreSQL\17\bin\`
 
 ## Docs
 
-### Main
-
-| Doc | Description |
-|-----|-------------|
-| [docs/index.md](docs/index.md) | Навигация по всей документации |
-| [docs/overview.md](docs/overview.md) | Обзор проекта, стек, структура |
-| [docs/architecture.md](docs/architecture.md) | Схема БД, жизненные циклы |
-
-### Components
-
-| Doc | Description |
-|-----|-------------|
-| [docs/bot.md](docs/bot.md) | Telegram-бот, команды, aiogram |
-| [docs/robokassa-adapter.md](docs/robokassa-adapter.md) | Платёжная интеграция |
-| [docs/docusaurus.md](docs/docusaurus.md) | Лендинг и пользовательская документация |
-
-### Operations
-
-| Doc | Description |
-|-----|-------------|
-| [docs/security.md](docs/security.md) | Валидация, rate limiting, HTTPS |
-| [docs/deployment.md](docs/deployment.md) | Docker, nginx, env |
-
-### References
-
-| Doc | Description |
-|-----|-------------|
-| [docs/robokassa/](docs/robokassa/) | Справочник Robokassa API |
-| [docs/roles/](docs/roles/) | Роли для AI-ассистентов |
-
-### Key Roles for AI
-
-| Role | File |
-|------|------|
-| Technical Writer | [docs/roles/technical-writer.md](docs/roles/technical-writer.md) |
-| Fullstack Developer | [docs/roles/fullstack-developer.md](docs/roles/fullstack-developer.md) |
-| System Analyst | [docs/roles/system-analyst.md](docs/roles/system-analyst.md) |
-
-### Milestones
-
-| Doc | Description |
-|-----|-------------|
-| [milestones/index.md](milestones/index.md) | План реализации по этапам |
-
-## Terminology
-
-| Short | Full |
-|-------|------|
-| M1, M2, ... | Milestone 1, Milestone 2, ... (этапы реализации) |
+- [docs/index.md](docs/index.md) — навигация
+- [docs/modules/](docs/modules/) — реализованные модули (database, bot, tariffs, payments, billing, promo, subscriptions, docker)
+- [docs/architecture.md](docs/architecture.md) — схема БД
+- [milestones/index.md](milestones/index.md) — план и статус
 
 ## Style
 
-- Docs: русский
-- Code & comments: English
+Docs: русский | Code: English

@@ -17,6 +17,7 @@ ITEMS_PER_PAGE = 10
 
 
 @router.message(Command("history"))
+@router.message(F.text == "📜 История")
 async def cmd_history(
     message: Message,
     user: User,
