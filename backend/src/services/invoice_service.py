@@ -59,12 +59,20 @@ class InvoiceService:
             ValidationError: If tariff is inactive or promo code is invalid
         """
         # Generate idempotency key (includes promo code for uniqueness)
-        idempotency_key = self.generate_idempotency_key(user_id, tariff_id, promo_code)
+        base_key = self.generate_idempotency_key(user_id, tariff_id, promo_code)
+        idempotency_key = base_key
 
         # Check for existing invoice with same idempotency key
         existing = await self.invoice_repo.get_by_idempotency_key(idempotency_key)
-        if existing and existing.status == InvoiceStatus.PENDING:
-            return existing
+        if existing:
+            if existing.status == InvoiceStatus.PENDING:
+                return existing
+            # Invoice exists but not pending (cancelled/expired) - generate new unique key
+            counter = 1
+            while existing:
+                idempotency_key = f"{base_key}:{counter}"
+                existing = await self.invoice_repo.get_by_idempotency_key(idempotency_key)
+                counter += 1
 
         # Get tariff
         tariff = await self.tariff_repo.get_by_id(tariff_id)

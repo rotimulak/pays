@@ -13,7 +13,21 @@
       "Bash(mv:*)",
       "Bash(python -m src.main:*)",
       "Bash(git rm:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python -c:*)",
+      "Bash(echo $TELEGRAM_BOT_TOKEN)",
+      "Bash(TELEGRAM_BOT_TOKEN=\"8294464937:AAG47HRwNsJaB4CMPtkAIRuHB6NRM6DT8zA\" python:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(wmic process where \"commandline like ''''%python%''''\" get processid,commandline)",
+      "Bash(alembic upgrade:*)",
+      "Bash(timeout:*)",
+      "Bash(\"C:\\Program Files\\PostgreSQL\\17\\bin\\psql.exe\" -U postgres -d telegram_billing -c \"SELECT enumlabel FROM pg_enum WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = ''invoice_status'');\")",
+      "Bash(ssh-keygen:*)",
+      "Bash(ssh-copy-id:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []

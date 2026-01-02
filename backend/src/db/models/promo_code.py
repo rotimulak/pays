@@ -44,7 +44,12 @@ class PromoCode(Base):
         comment="Promo code string",
     )
     discount_type: Mapped[DiscountType] = mapped_column(
-        Enum(DiscountType, name="discount_type", create_constraint=True),
+        Enum(
+            DiscountType,
+            name="discount_type",
+            create_constraint=True,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
         comment="Type of discount",
     )

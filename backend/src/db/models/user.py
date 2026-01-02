@@ -58,6 +58,24 @@ class User(Base):
         nullable=False,
         comment="User is blocked",
     )
+    auto_renew: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+        comment="Auto-renew subscription when expiring",
+    )
+    last_subscription_notification: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+        comment="Days before expiry when last notification was sent",
+    )
+    last_balance_notification: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+        default=None,
+        comment="Last balance threshold notification was sent for",
+    )
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow,
         nullable=False,

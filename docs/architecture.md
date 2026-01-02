@@ -13,6 +13,8 @@
 │ deleted_at        │ TIMESTAMPTZ   │ Soft delete (nullable)      │
 │ balance_version   │ INT           │ Версия для optimistic lock  │
 │ subscription_end  │ TIMESTAMPTZ   │ Дата окончания подписки UTC │
+│ auto_renew        │ BOOLEAN       │ Автопродление (DEFAULT true)│
+│ last_subscription_notification │ INT │ Дней до уведомления     │
 │ created_at        │ TIMESTAMPTZ   │ DEFAULT now()               │
 │ updated_at        │ TIMESTAMPTZ   │ DEFAULT now()               │
 └─────────────────────────────────────────────────────────────────┘
@@ -648,3 +650,4 @@ SELECT status FROM invoices WHERE idempotency_key = :key;
 - [Обзор](overview.md) — общее описание проекта
 - [Интеграция с Робокассой](robokassa-adapter.md) — детали платёжной интеграции
 - [Безопасность](security.md) — защита от повторной обработки платежей
+- [Subscriptions](modules/subscriptions.md) — управление подписками, автопродление

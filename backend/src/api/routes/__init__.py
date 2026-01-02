@@ -1,5 +1,5 @@
 """API routes."""
 
-from src.api.routes import webhook
+from src.api.routes import tokens, webhook
 
-__all__ = ["webhook"]
+__all__ = ["tokens", "webhook"]

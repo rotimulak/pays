@@ -87,5 +87,39 @@ class Settings(BaseSettings):
         description="Hours until pending invoice expires",
     )
 
+    # API Authentication
+    api_secret_key: str = Field(
+        default="",
+        description="Secret key for API authentication",
+    )
+
+    # Rate limiting
+    rate_limit_calls: int = Field(
+        default=100,
+        description="Max API calls per period",
+    )
+    rate_limit_period: int = Field(
+        default=60,
+        description="Rate limit period in seconds",
+    )
+
+    # Subscription settings
+    subscription_renewal_days: int = Field(
+        default=30,
+        description="Subscription duration in days",
+    )
+    subscription_renewal_price: int = Field(
+        default=100,
+        description="Subscription renewal price in tokens",
+    )
+    subscription_notify_days: list[int] = Field(
+        default=[3, 1, 0],
+        description="Days before expiry to send notifications",
+    )
+    subscription_grace_period_days: int = Field(
+        default=0,
+        description="Grace period after expiry (days)",
+    )
+
 
 settings = Settings()

@@ -96,6 +96,18 @@ class TransactionService:
         """Get aggregated transaction stats."""
         return await self.transaction_repo.get_user_stats(user_id)
 
+    async def get_recent_spending(self, user_id: int, days: int = 7) -> int:
+        """Get total spending for recent days.
+
+        Args:
+            user_id: Telegram user ID
+            days: Number of days to look back
+
+        Returns:
+            Total tokens spent (absolute value)
+        """
+        return await self.transaction_repo.get_recent_spending(user_id, days)
+
     def _to_dto(self, transaction: Transaction) -> TransactionDTO:
         """Convert model to DTO."""
         return TransactionDTO(

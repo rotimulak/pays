@@ -1,5 +1,6 @@
 """Transaction repository for database operations."""
 
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -35,6 +36,22 @@ class TransactionRepository:
         """Get transaction by ID."""
         result = await self.session.execute(
             select(Transaction).where(Transaction.id == transaction_id)
+        )
+        return result.scalar_one_or_none()
+
+    async def get_by_idempotency(self, key: str) -> Transaction | None:
+        """Get transaction by idempotency key.
+
+        Used to check if an operation was already performed.
+
+        Args:
+            key: Idempotency key
+
+        Returns:
+            Transaction if found, None otherwise
+        """
+        result = await self.session.execute(
+            select(Transaction).where(Transaction.idempotency_key == key)
         )
         return result.scalar_one_or_none()
 
@@ -145,3 +162,25 @@ class TransactionRepository:
             total_refund=total_refund,
             transaction_count=transaction_count,
         )
+
+    async def get_recent_spending(self, user_id: int, days: int = 7) -> int:
+        """Get total spending for recent days.
+
+        Args:
+            user_id: User's Telegram ID
+            days: Number of days to look back
+
+        Returns:
+            Total tokens spent (absolute value)
+        """
+        cutoff = datetime.utcnow() - timedelta(days=days)
+
+        result = await self.session.execute(
+            select(func.sum(Transaction.tokens_delta))
+            .where(Transaction.user_id == user_id)
+            .where(Transaction.type == TransactionType.SPEND)
+            .where(Transaction.created_at >= cutoff)
+        )
+
+        total = result.scalar_one_or_none()
+        return abs(int(total or 0))

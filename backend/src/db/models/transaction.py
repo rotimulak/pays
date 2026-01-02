@@ -18,6 +18,7 @@ class TransactionType(enum.Enum):
     SPEND = "spend"
     REFUND = "refund"
     ADJUSTMENT = "adjustment"
+    SUBSCRIPTION = "subscription"
 
 
 class Transaction(Base):
@@ -38,7 +39,12 @@ class Transaction(Base):
         comment="User who owns the transaction",
     )
     type: Mapped[TransactionType] = mapped_column(
-        Enum(TransactionType, name="transaction_type", create_constraint=True),
+        Enum(
+            TransactionType,
+            name="transaction_type",
+            create_constraint=True,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         nullable=False,
         comment="Transaction type",
     )

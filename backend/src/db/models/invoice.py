@@ -86,7 +86,12 @@ class Invoice(Base):
         comment="Subscription days to add on payment",
     )
     status: Mapped[InvoiceStatus] = mapped_column(
-        Enum(InvoiceStatus, name="invoice_status", create_constraint=True),
+        Enum(
+            InvoiceStatus,
+            name="invoice_status",
+            create_constraint=True,
+            values_callable=lambda x: [e.value for e in x],
+        ),
         default=InvoiceStatus.PENDING,
         nullable=False,
         comment="Payment status",

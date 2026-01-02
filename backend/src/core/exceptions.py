@@ -49,6 +49,40 @@ class InsufficientBalanceError(AppException):
     error_code = "INSUFFICIENT_BALANCE"
     message = "Insufficient token balance"
 
+    def __init__(
+        self,
+        required: int,
+        available: int,
+        message: str | None = None,
+    ) -> None:
+        self.required = required
+        self.available = available
+        super().__init__(
+            message=message or f"Insufficient balance: need {required}, have {available}",
+            details={"required": required, "available": available},
+        )
+
+
+class SubscriptionExpiredError(AppException):
+    """Subscription is expired or not active."""
+
+    error_code = "SUBSCRIPTION_EXPIRED"
+    message = "Subscription expired"
+
+
+class UserBlockedError(AppException):
+    """User is blocked from operations."""
+
+    error_code = "USER_BLOCKED"
+    message = "User is blocked"
+
+
+class ConcurrentModificationError(AppException):
+    """Race condition detected during modification."""
+
+    error_code = "CONCURRENT_MODIFICATION"
+    message = "Resource was modified by another operation. Please retry."
+
 
 class DuplicateError(AppException):
     """Duplicate operation (idempotency violation)."""

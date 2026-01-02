@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import select, update
+from sqlalchemy import and_, select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -171,3 +171,191 @@ class UserRepository:
         await self.session.flush()
         await self.session.refresh(user)
         return user
+
+    async def update_last_balance_notification(
+        self,
+        user_id: int,
+        threshold: int,
+    ) -> None:
+        """Update last balance notification threshold.
+
+        Args:
+            user_id: User's Telegram ID
+            threshold: Balance threshold that was notified
+        """
+        await self.session.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                last_balance_notification=threshold,
+                updated_at=datetime.utcnow(),
+            )
+        )
+
+    async def reset_balance_notification(self, user_id: int) -> None:
+        """Reset balance notification threshold after topup.
+
+        Called after user tops up balance to enable future notifications.
+
+        Args:
+            user_id: User's Telegram ID
+        """
+        await self.session.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                last_balance_notification=None,
+                updated_at=datetime.utcnow(),
+            )
+        )
+
+    async def get_expiring_subscriptions(
+        self,
+        days_ahead: int,
+    ) -> list[User]:
+        """Get users with subscriptions expiring within N days.
+
+        Args:
+            days_ahead: Number of days to look ahead
+
+        Returns:
+            List of users with expiring subscriptions
+        """
+        now = datetime.utcnow()
+        cutoff = now + timedelta(days=days_ahead + 1)
+
+        result = await self.session.execute(
+            select(User).where(
+                and_(
+                    User.subscription_end.isnot(None),
+                    User.subscription_end > now,
+                    User.subscription_end <= cutoff,
+                    User.is_blocked == False,  # noqa: E712
+                )
+            )
+        )
+        return list(result.scalars().all())
+
+    async def get_expired_subscriptions(self) -> list[User]:
+        """Get users with expired subscriptions (past end date).
+
+        Returns:
+            List of users with expired subscriptions
+        """
+        now = datetime.utcnow()
+
+        result = await self.session.execute(
+            select(User).where(
+                and_(
+                    User.subscription_end.isnot(None),
+                    User.subscription_end <= now,
+                    User.is_blocked == False,  # noqa: E712
+                )
+            )
+        )
+        return list(result.scalars().all())
+
+    async def get_users_for_auto_renewal(self) -> list[User]:
+        """Get users eligible for auto-renewal.
+
+        Returns:
+            Users with auto_renew=True and subscription expiring today or expired
+        """
+        now = datetime.utcnow()
+        # Users whose subscription expires today or has already expired
+        cutoff = now + timedelta(days=1)
+
+        result = await self.session.execute(
+            select(User).where(
+                and_(
+                    User.subscription_end.isnot(None),
+                    User.subscription_end <= cutoff,
+                    User.auto_renew == True,  # noqa: E712
+                    User.is_blocked == False,  # noqa: E712
+                )
+            )
+        )
+        return list(result.scalars().all())
+
+    async def update_auto_renew(self, user_id: int, enabled: bool) -> User:
+        """Update auto-renew setting for user.
+
+        Args:
+            user_id: User's Telegram ID
+            enabled: Whether auto-renew should be enabled
+
+        Returns:
+            Updated user
+
+        Raises:
+            NotFoundError: If user not found
+        """
+        stmt = (
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                auto_renew=enabled,
+                updated_at=datetime.utcnow(),
+            )
+            .returning(User)
+        )
+
+        result = await self.session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if user is None:
+            raise NotFoundError(
+                message=f"User {user_id} not found",
+                details={"user_id": user_id},
+            )
+
+        return user
+
+    async def update_subscription_notification(
+        self,
+        user_id: int,
+        days_before: int,
+    ) -> None:
+        """Update last subscription notification days.
+
+        Args:
+            user_id: User's Telegram ID
+            days_before: Days before expiry when notification was sent
+        """
+        await self.session.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                last_subscription_notification=days_before,
+                updated_at=datetime.utcnow(),
+            )
+        )
+
+    async def reset_subscription_notification(self, user_id: int) -> None:
+        """Reset subscription notification after renewal.
+
+        Args:
+            user_id: User's Telegram ID
+        """
+        await self.session.execute(
+            update(User)
+            .where(User.id == user_id)
+            .values(
+                last_subscription_notification=None,
+                updated_at=datetime.utcnow(),
+            )
+        )
+
+    async def get_for_update(self, user_id: int) -> User | None:
+        """Get user with row-level lock for atomic updates.
+
+        Args:
+            user_id: User's Telegram ID
+
+        Returns:
+            User with lock or None
+        """
+        result = await self.session.execute(
+            select(User).where(User.id == user_id).with_for_update()
+        )
+        return result.scalar_one_or_none()

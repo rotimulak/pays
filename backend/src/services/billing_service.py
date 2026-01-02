@@ -129,6 +129,7 @@ class BillingService:
             await self._notification_service.notify_payment_success(
                 user_id=invoice.user_id,
                 invoice=invoice,
+                new_balance=user.token_balance if user else None,
             )
 
         logger.info(
