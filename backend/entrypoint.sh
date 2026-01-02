@@ -51,7 +51,7 @@ wait_for_db() {
 # Run database migrations
 run_migrations() {
     log_info "Running database migrations..."
-    if alembic upgrade head; then
+    if python -m alembic upgrade head; then
         log_info "Migrations completed successfully"
     else
         log_error "Migration failed"
