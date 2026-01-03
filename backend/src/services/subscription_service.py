@@ -1,4 +1,7 @@
-"""Subscription management service."""
+"""Subscription management service.
+
+M11: Updated to use tariff-based subscription fee and period.
+"""
 
 import logging
 from datetime import datetime, timedelta
@@ -6,10 +9,13 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.config import settings
+from src.db.models.tariff import Tariff
 from src.db.models.transaction import Transaction, TransactionType
 from src.db.models.user import User
+from src.db.repositories.tariff_repository import TariffRepository
 from src.db.repositories.transaction_repository import TransactionRepository
 from src.db.repositories.user_repository import UserRepository
+from src.services.billing_service import calculate_subscription_end
 from src.services.notification_service import NotificationService
 
 logger = logging.getLogger(__name__)
@@ -26,13 +32,20 @@ class SubscriptionService:
         self.session = session
         self.user_repo = UserRepository(session)
         self.transaction_repo = TransactionRepository(session)
+        self.tariff_repo = TariffRepository(session)
         self.notification_service = notification_service
+
+    async def _get_tariff(self) -> Tariff | None:
+        """Get default tariff for subscription operations."""
+        return await self.tariff_repo.get_default_tariff()
 
     async def check_expiring_subscriptions(
         self,
         notify_days: list[int] | None = None,
     ) -> dict[int, list[int]]:
         """Check for expiring subscriptions and send notifications.
+
+        M11: Now includes balance info and subscription_fee in notifications.
 
         Args:
             notify_days: Days before expiry to notify (default from settings)
@@ -42,6 +55,10 @@ class SubscriptionService:
         """
         if notify_days is None:
             notify_days = settings.subscription_notify_days
+
+        # M11: Get tariff for subscription_fee info
+        tariff = await self._get_tariff()
+        subscription_fee = tariff.subscription_fee if tariff else settings.subscription_renewal_price
 
         notified: dict[int, list[int]] = {}
         now = datetime.utcnow()
@@ -67,9 +84,12 @@ class SubscriptionService:
                 # Only notify if we're at or past this threshold
                 if days_left <= days:
                     try:
+                        # M11: Include balance and fee info
                         success = await self.notification_service.notify_subscription_expiring(
                             user.id,
                             days_left,
+                            balance=user.token_balance,
+                            subscription_fee=subscription_fee,
                         )
                         if success:
                             await self.user_repo.update_subscription_notification(
@@ -95,6 +115,8 @@ class SubscriptionService:
     async def process_auto_renewal(self, user_id: int) -> bool:
         """Attempt to auto-renew subscription for a user.
 
+        M11: Uses tariff-based subscription_fee and period.
+
         Args:
             user_id: User's Telegram ID
 
@@ -111,7 +133,13 @@ class SubscriptionService:
             logger.debug("Auto-renew disabled for user %d", user_id)
             return False
 
-        renewal_price = settings.subscription_renewal_price
+        # M11: Get renewal price from tariff
+        tariff = await self._get_tariff()
+        if tariff is None:
+            logger.error("No active tariff found for auto-renewal")
+            return False
+
+        renewal_price = tariff.subscription_fee
 
         if user.token_balance < renewal_price:
             logger.info(
@@ -136,11 +164,12 @@ class SubscriptionService:
                 expected_version=user.balance_version,
             )
 
-            # Calculate new end date
-            base_date = user.subscription_end or datetime.utcnow()
-            if base_date < datetime.utcnow():
-                base_date = datetime.utcnow()
-            new_end = base_date + timedelta(days=settings.subscription_renewal_days)
+            # M11: Calculate new end date using tariff period
+            new_end = calculate_subscription_end(
+                current_end=user.subscription_end,
+                unit=tariff.period_unit,
+                value=tariff.period_value,
+            )
 
             # Update subscription end date
             await self.user_repo.update_subscription(user_id, new_end)
@@ -154,7 +183,7 @@ class SubscriptionService:
                 type=TransactionType.SUBSCRIPTION,
                 tokens_delta=-renewal_price,
                 balance_after=updated_user.token_balance,
-                description=f"Auto-renewal subscription ({settings.subscription_renewal_days} days)",
+                description=f"Автопродление подписки ({tariff.period_value} {tariff.period_unit.value})",
             )
             await self.transaction_repo.create(transaction)
 
@@ -220,16 +249,26 @@ class SubscriptionService:
     async def expire_subscriptions(self) -> list[int]:
         """Mark expired subscriptions and notify users.
 
+        M11: Includes balance and fee info in notifications.
+
         Returns:
             List of user IDs whose subscriptions expired
         """
+        # M11: Get tariff for fee info
+        tariff = await self._get_tariff()
+        subscription_fee = tariff.subscription_fee if tariff else settings.subscription_renewal_price
+
         users = await self.user_repo.get_expired_subscriptions()
         expired_users: list[int] = []
 
         for user in users:
             try:
-                # Notify user about expiration
-                await self.notification_service.notify_subscription_expired(user.id)
+                # M11: Notify with balance and fee info
+                await self.notification_service.notify_subscription_expired(
+                    user.id,
+                    subscription_fee=subscription_fee,
+                    balance=user.token_balance,
+                )
                 expired_users.append(user.id)
                 logger.info("Subscription expired for user %d", user.id)
             except Exception as e:
@@ -318,6 +357,8 @@ class SubscriptionService:
     async def manual_renew(self, user_id: int) -> bool:
         """Manually renew subscription (user-initiated).
 
+        M11: Uses tariff-based subscription_fee and period.
+
         Args:
             user_id: User's Telegram ID
 
@@ -329,7 +370,13 @@ class SubscriptionService:
         if user is None:
             raise ValueError(f"User {user_id} not found")
 
-        renewal_price = settings.subscription_renewal_price
+        # M11: Get renewal price from tariff
+        tariff = await self._get_tariff()
+        if tariff is None:
+            logger.error("No active tariff found for manual renewal")
+            return False
+
+        renewal_price = tariff.subscription_fee
 
         if user.token_balance < renewal_price:
             return False
@@ -341,11 +388,12 @@ class SubscriptionService:
             expected_version=user.balance_version,
         )
 
-        # Calculate new end date
-        base_date = user.subscription_end or datetime.utcnow()
-        if base_date < datetime.utcnow():
-            base_date = datetime.utcnow()
-        new_end = base_date + timedelta(days=settings.subscription_renewal_days)
+        # M11: Calculate new end date using tariff period
+        new_end = calculate_subscription_end(
+            current_end=user.subscription_end,
+            unit=tariff.period_unit,
+            value=tariff.period_value,
+        )
 
         # Update subscription
         await self.user_repo.update_subscription(user_id, new_end)
@@ -357,7 +405,7 @@ class SubscriptionService:
             type=TransactionType.SUBSCRIPTION,
             tokens_delta=-renewal_price,
             balance_after=updated_user.token_balance,
-            description=f"Manual subscription renewal ({settings.subscription_renewal_days} days)",
+            description=f"Продление подписки ({tariff.period_value} {tariff.period_unit.value})",
         )
         await self.transaction_repo.create(transaction)
 

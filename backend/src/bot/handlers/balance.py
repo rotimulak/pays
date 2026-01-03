@@ -1,122 +1,286 @@
-"""Balance handler."""
+"""Balance handler for M11 simplified UX."""
 
 from datetime import datetime
+from decimal import Decimal
 
 from aiogram import F, Router
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.bot.keyboards.balance import get_balance_keyboard
+from src.bot.keyboards.balance import (
+    get_balance_keyboard,
+    get_cancel_keyboard,
+    get_payment_keyboard,
+)
+from src.bot.states.payment import PaymentStates
 from src.db.models.user import User
-from src.db.repositories.transaction_repository import TransactionStats
-from src.services.token_service import TokenService
-from src.services.transaction_service import TransactionService
+from src.db.repositories.tariff_repository import TariffRepository
+from src.services.invoice_service import InvoiceService
+from src.services.payment_service import PaymentService
 
 router = Router()
 
+# ========== Message Templates ==========
+
+BALANCE_ACTIVE_TEMPLATE = """
+📊 <b>Ваш баланс</b>
+
+💳 Баланс: <b>{balance}</b> токенов
+📅 Подписка активна до: <b>{subscription_end}</b>
+
+━━━━━━━━━━━━━━━━━━━━━
+ℹ️ Абонплата: {subscription_fee} токенов/мес.
+Токены расходуются на запросы.
+Минимальное пополнение: {min_payment}₽
+"""
+
+BALANCE_INACTIVE_TEMPLATE = """
+📊 <b>Ваш баланс</b>
+
+💳 Баланс: <b>{balance}</b> токенов
+⚠️ Подписка неактивна
+
+━━━━━━━━━━━━━━━━━━━━━
+ℹ️ Для активации пополните минимум {min_payment}₽.
+{subscription_fee} токенов — абонплата,
+остальное — на баланс.
+"""
+
+ENTER_AMOUNT_TEMPLATE = """
+✏️ <b>Введите сумму пополнения</b>
+
+Минимальная сумма: {min_payment}₽
+
+Отправьте число (только цифры):
+"""
+
+PAYMENT_READY_TEMPLATE = """
+💳 <b>Пополнение на {amount}₽</b>
+
+Нажмите кнопку для перехода к оплате:
+"""
+
+
+# ========== Helpers ==========
+
+
+async def _get_balance_text(user: User, session: AsyncSession) -> tuple[str, Decimal]:
+    """Get formatted balance text and min_payment.
+
+    Returns:
+        Tuple of (formatted_text, min_payment)
+    """
+    tariff_repo = TariffRepository(session)
+    tariff = await tariff_repo.get_default_tariff()
+
+    if tariff is None:
+        # Fallback values if no tariff configured
+        min_payment = Decimal("200.00")
+        subscription_fee = 100
+    else:
+        min_payment = tariff.min_payment
+        subscription_fee = tariff.subscription_fee
+
+    now = datetime.utcnow()
+    is_active = user.subscription_end is not None and user.subscription_end > now
+
+    if is_active:
+        text = BALANCE_ACTIVE_TEMPLATE.format(
+            balance=user.token_balance,
+            subscription_end=user.subscription_end.strftime("%d.%m.%Y"),
+            subscription_fee=subscription_fee,
+            min_payment=int(min_payment),
+        )
+    else:
+        text = BALANCE_INACTIVE_TEMPLATE.format(
+            balance=user.token_balance,
+            subscription_fee=subscription_fee,
+            min_payment=int(min_payment),
+        )
+
+    return text.strip(), min_payment
+
+
+# ========== Handlers ==========
+
 
 @router.message(Command("balance"))
+@router.message(F.text == "💰 Баланс")
 async def cmd_balance(
     message: Message,
     user: User,
     session: AsyncSession,
 ) -> None:
-    """Show detailed balance information."""
-    token_service = TokenService(session)
-    transaction_service = TransactionService(session)
-
-    # Get balance info
-    balance = await token_service.check_balance(user.id)
-
-    # Get stats
-    stats = await transaction_service.get_user_stats(user.id)
-    recent_spend = await transaction_service.get_recent_spending(user.id, days=7)
-
-    text = format_detailed_balance(balance, stats, recent_spend)
-    keyboard = get_balance_keyboard(balance.can_spend)
-
-    await message.answer(text, reply_markup=keyboard)
+    """Show balance screen."""
+    text, min_payment = await _get_balance_text(user, session)
+    await message.answer(text, reply_markup=get_balance_keyboard(min_payment))
 
 
+@router.callback_query(F.data == "balance")
 @router.callback_query(F.data == "refresh_balance")
-async def on_refresh_balance(
+async def on_balance_callback(
     callback: CallbackQuery,
     user: User,
     session: AsyncSession,
+    state: FSMContext,
 ) -> None:
-    """Refresh balance information."""
-    token_service = TokenService(session)
-    transaction_service = TransactionService(session)
+    """Show/refresh balance screen (callback)."""
+    # Clear any FSM state when returning to balance
+    await state.clear()
 
-    balance = await token_service.check_balance(user.id)
-    stats = await transaction_service.get_user_stats(user.id)
-    recent_spend = await transaction_service.get_recent_spending(user.id, days=7)
+    if callback.message is None:
+        await callback.answer()
+        return
 
-    text = format_detailed_balance(balance, stats, recent_spend)
-    keyboard = get_balance_keyboard(balance.can_spend)
+    text, min_payment = await _get_balance_text(user, session)
 
-    await callback.message.edit_text(text, reply_markup=keyboard)
-    await callback.answer("Obnovleno")
+    try:
+        await callback.message.edit_text(text, reply_markup=get_balance_keyboard(min_payment))
+    except Exception:
+        # Message not modified (same content)
+        pass
+
+    await callback.answer("Обновлено" if callback.data == "refresh_balance" else None)
 
 
-def format_detailed_balance(
-    balance,
-    stats: TransactionStats,
-    recent_spend: int,
-) -> str:
-    """Format detailed balance message."""
-    lines = ["<b>Vash balans</b>\n"]
+@router.callback_query(F.data.startswith("pay:"))
+async def on_pay_callback(
+    callback: CallbackQuery,
+    user: User,
+    session: AsyncSession,
+    state: FSMContext,
+) -> None:
+    """Handle payment button clicks."""
+    if callback.message is None:
+        await callback.answer()
+        return
 
-    # Current balance with status indicator
-    if balance.token_balance > 50:
-        balance_icon = "zelenyj"
-    elif balance.token_balance > 10:
-        balance_icon = "zheltyj"
-    else:
-        balance_icon = "krasnyj"
+    # Extract amount from callback data
+    _, amount_str = callback.data.split(":", 1)
 
-    lines.append(f"{balance_icon} Tokeny: <b>{balance.token_balance}</b>")
+    if amount_str == "custom":
+        # Show custom amount input
+        tariff_repo = TariffRepository(session)
+        tariff = await tariff_repo.get_default_tariff()
+        min_payment = int(tariff.min_payment) if tariff else 200
 
-    # Subscription status
-    if balance.subscription_active:
-        days_left = (balance.subscription_end - datetime.utcnow()).days
-        if days_left <= 3:
-            sub_icon = "vnimanie"
-        else:
-            sub_icon = "ok"
-        lines.append(
-            f"{sub_icon} Podpiska: do {balance.subscription_end.strftime('%d.%m.%Y')}"
+        await state.set_state(PaymentStates.waiting_for_amount)
+        await state.update_data(min_payment=min_payment)
+
+        text = ENTER_AMOUNT_TEMPLATE.format(min_payment=min_payment)
+        await callback.message.edit_text(text, reply_markup=get_cancel_keyboard())
+        await callback.answer()
+        return
+
+    # Quick payment with fixed amount
+    amount = int(amount_str)
+    await _create_payment(callback, user, session, amount)
+
+
+async def _create_payment(
+    callback: CallbackQuery,
+    user: User,
+    session: AsyncSession,
+    amount: int,
+) -> None:
+    """Create invoice and show payment link."""
+    tariff_repo = TariffRepository(session)
+    tariff = await tariff_repo.get_default_tariff()
+
+    if tariff is None:
+        await callback.answer("Ошибка: тариф не настроен", show_alert=True)
+        return
+
+    # Validate minimum payment
+    if amount < int(tariff.min_payment):
+        await callback.answer(
+            f"Минимальная сумма: {int(tariff.min_payment)}₽",
+            show_alert=True,
         )
-        if days_left <= 3:
-            lines.append(f"   <i>Ostalos {days_left} dnej</i>")
-    else:
-        lines.append("x Podpiska: <b>ne aktivna</b>")
+        return
 
-    # Spending status
-    lines.append("")
-    if balance.can_spend:
-        lines.append("ok Spisanie tokenov: <b>dostupno</b>")
-    else:
-        lines.append(f"x Spisanie tokenov: {balance.reason}")
+    # Create invoice
+    invoice_service = InvoiceService(session)
+    invoice = await invoice_service.create_invoice(
+        user_id=user.id,
+        tariff_id=tariff.id,
+    )
 
-    # Stats
-    if stats:
-        lines.append("\n<b>Statistika</b>")
-        lines.append(f"   Vsego polucheno: {stats.total_topup} tokenov")
-        lines.append(f"   Vsego potracheno: {stats.total_spent} tokenov")
+    # Override invoice amount with user's amount
+    # Note: In real implementation, you might want a separate method for M11 invoices
+    invoice.amount = Decimal(amount)
+    invoice.tokens = amount  # 1:1 ratio
 
-    # Recent spending
-    if recent_spend:
-        lines.append(f"\nZa poslednie 7 dnej:")
-        lines.append(f"   Potracheno: {recent_spend} tokenov")
-        avg_daily = recent_spend / 7
-        lines.append(f"   V srednem: {avg_daily:.1f} tokenov/den")
+    # Get payment URL
+    payment_service = PaymentService(session)
+    payment_url = await payment_service.create_payment_url(invoice.id)
 
-    # Actions
-    lines.append("\n")
-    if not balance.can_spend:
-        lines.append("Popolnit: /tariffs")
-    lines.append("Istoriya: /history")
+    text = PAYMENT_READY_TEMPLATE.format(amount=amount)
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_payment_keyboard(amount, payment_url),
+    )
+    await callback.answer()
 
-    return "\n".join(lines)
+
+@router.message(PaymentStates.waiting_for_amount)
+async def on_amount_input(
+    message: Message,
+    user: User,
+    session: AsyncSession,
+    state: FSMContext,
+) -> None:
+    """Handle custom amount input."""
+    data = await state.get_data()
+    min_payment = data.get("min_payment", 200)
+
+    # Validate input
+    text = message.text.strip() if message.text else ""
+
+    try:
+        amount = int(text)
+    except ValueError:
+        await message.answer(
+            f"❌ Введите число (только цифры).\nМинимум: {min_payment}₽"
+        )
+        return
+
+    if amount < min_payment:
+        await message.answer(
+            f"❌ Минимальная сумма: {min_payment}₽\nВы ввели: {amount}₽"
+        )
+        return
+
+    # Clear FSM state
+    await state.clear()
+
+    # Get tariff for invoice creation
+    tariff_repo = TariffRepository(session)
+    tariff = await tariff_repo.get_default_tariff()
+
+    if tariff is None:
+        await message.answer("Ошибка: тариф не настроен")
+        return
+
+    # Create invoice
+    invoice_service = InvoiceService(session)
+    invoice = await invoice_service.create_invoice(
+        user_id=user.id,
+        tariff_id=tariff.id,
+    )
+
+    # Override invoice amount
+    invoice.amount = Decimal(amount)
+    invoice.tokens = amount
+
+    # Get payment URL
+    payment_service = PaymentService(session)
+    payment_url = await payment_service.create_payment_url(invoice.id)
+
+    text = PAYMENT_READY_TEMPLATE.format(amount=amount)
+    await message.answer(
+        text,
+        reply_markup=get_payment_keyboard(amount, payment_url),
+    )

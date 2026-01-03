@@ -20,7 +20,7 @@
 | M8 | [Token Spending](m8-token-spending.md) | Расходование токенов | M5 | [📋 Epics & Tasks](m8/) |
 | M9 | [Subscription Management](m9-subscription-management.md) | Автопродление, уведомления | M8 | [📋 Epics & Tasks](m9/) |
 | M10 | [Docker & Deploy](m10-docker-and-deploy.md) | Production-ready деплой | M9 | — |
-| M11 | [Simplified Payment UX](m11-simplified-ux.md) | Упрощённое меню, скрытые тарифы | M9 | — |
+| M11 | [Simplified Payment UX](m11-simplified-ux.md) | Упрощённое меню, скрытые тарифы | M9 | [📋 Epics & Tasks](m11/) |
 
 ---
 
@@ -61,6 +61,6 @@ M1 ──> M2 ──> M3 ──> M4 ──> M5 ──┬──> M6
 | M8 | ✅ Done |
 | M9 | ✅ Done |
 | M10 | ✅ Done |
-| M11 | 🔲 Not started |
+| M11 | ✅ Done |
 
 Легенда: 🔲 Not started | 🔄 In progress | ✅ Done

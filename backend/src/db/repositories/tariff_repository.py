@@ -51,6 +51,20 @@ class TariffRepository:
         await self.session.refresh(tariff)
         return tariff
 
+    async def get_default_tariff(self) -> Tariff | None:
+        """Get the first active tariff (used in M11 simplified UX).
+
+        Returns:
+            First active tariff or None if no active tariffs
+        """
+        result = await self.session.execute(
+            select(Tariff)
+            .where(Tariff.is_active.is_(True))
+            .order_by(Tariff.sort_order)
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def deactivate(self, tariff_id: UUID) -> Tariff:
         """Set is_active=False (soft delete).
 

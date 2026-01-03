@@ -1,25 +1,74 @@
-"""Balance keyboards."""
+"""Balance keyboards for M11 simplified UX."""
 
-from aiogram.types import InlineKeyboardMarkup
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from decimal import Decimal
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
-def get_balance_keyboard(can_spend: bool) -> InlineKeyboardMarkup:
-    """Keyboard for balance view.
+def get_balance_keyboard(min_payment: Decimal = Decimal("200.00")) -> InlineKeyboardMarkup:
+    """Keyboard for M11 balance screen.
+
+    Layout:
+    [💳 Пополнить 200₽] [✏️ Другая сумма]
+    [📋 История] [🔄 Обновить]
+    [◀️ Главное меню]
 
     Args:
-        can_spend: Whether user can spend tokens
+        min_payment: Minimum payment amount from tariff
 
     Returns:
-        Inline keyboard with action buttons
+        Inline keyboard with payment buttons
     """
-    builder = InlineKeyboardBuilder()
+    min_amount = int(min_payment)
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=f"💳 Пополнить {min_amount}₽",
+                    callback_data=f"pay:{min_amount}",
+                ),
+                InlineKeyboardButton(
+                    text="✏️ Другая сумма",
+                    callback_data="pay:custom",
+                ),
+            ],
+            [
+                InlineKeyboardButton(text="📋 История", callback_data="show_history"),
+                InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_balance"),
+            ],
+            [
+                InlineKeyboardButton(text="◀️ Главное меню", callback_data="main_menu"),
+            ],
+        ]
+    )
 
-    if not can_spend:
-        builder.button(text="Popolnit balans", callback_data="show_tariffs")
 
-    builder.button(text="Istoriya tranzakcij", callback_data="show_history")
-    builder.button(text="Obnovit", callback_data="refresh_balance")
+def get_payment_keyboard(amount: int, payment_url: str) -> InlineKeyboardMarkup:
+    """Keyboard for payment confirmation.
 
-    builder.adjust(1)
-    return builder.as_markup()
+    Args:
+        amount: Payment amount in RUB
+        payment_url: URL to payment provider
+
+    Returns:
+        Inline keyboard with pay and cancel buttons
+    """
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text=f"💳 Оплатить {amount}₽", url=payment_url),
+            ],
+            [
+                InlineKeyboardButton(text="◀️ Отмена", callback_data="balance"),
+            ],
+        ]
+    )
+
+
+def get_cancel_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard with just cancel button (for FSM states)."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Отмена", callback_data="balance")],
+        ]
+    )

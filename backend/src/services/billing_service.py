@@ -1,19 +1,62 @@
 """Billing service for processing payments and crediting users."""
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
+from decimal import Decimal
 from uuid import UUID
 
+from dateutil.relativedelta import relativedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.exceptions import NotFoundError
 from src.db.models.invoice import Invoice, InvoiceStatus
+from src.db.models.tariff import PeriodUnit, Tariff
 from src.db.models.transaction import Transaction, TransactionType
 from src.db.repositories.invoice_repository import InvoiceRepository
+from src.db.repositories.tariff_repository import TariffRepository
 from src.db.repositories.transaction_repository import TransactionRepository
 from src.db.repositories.user_repository import UserRepository
 
 logger = logging.getLogger(__name__)
+
+
+def calculate_subscription_end(
+    current_end: datetime | None,
+    unit: PeriodUnit,
+    value: int,
+) -> datetime:
+    """Calculate next subscription end date.
+
+    Args:
+        current_end: Current subscription end (or None for new subscription)
+        unit: Period unit (hour/day/month)
+        value: Number of units
+
+    Returns:
+        New subscription end datetime
+    """
+    base = current_end if current_end and current_end > datetime.utcnow() else datetime.utcnow()
+
+    if unit == PeriodUnit.HOUR:
+        return base + timedelta(hours=value)
+    elif unit == PeriodUnit.DAY:
+        return base + timedelta(days=value)
+    elif unit == PeriodUnit.MONTH:
+        return base + relativedelta(months=value)
+    else:
+        raise ValueError(f"Unknown period unit: {unit}")
+
+
+@dataclass
+class PaymentResult:
+    """Result of M11 payment processing."""
+
+    tokens_credited: int
+    subscription_fee_charged: int
+    subscription_activated: bool
+    subscription_end: datetime | None
+    new_balance: int
 
 
 class BillingService:
@@ -24,6 +67,7 @@ class BillingService:
         self.invoice_repo = InvoiceRepository(session)
         self.user_repo = UserRepository(session)
         self.transaction_repo = TransactionRepository(session)
+        self.tariff_repo = TariffRepository(session)
         self._audit_service: "AuditService | None" = None  # type: ignore[name-defined]
         self._notification_service: "NotificationService | None" = None  # type: ignore[name-defined]
 
@@ -256,3 +300,129 @@ class BillingService:
         )
 
         return new_end
+
+    # ========== M11: Simplified Payment UX ==========
+
+    def is_subscription_active(self, user) -> bool:
+        """Check if user's subscription is currently active.
+
+        Args:
+            user: User model instance
+
+        Returns:
+            True if subscription_end > now, False otherwise
+        """
+        if user.subscription_end is None:
+            return False
+        return user.subscription_end > datetime.utcnow()
+
+    async def process_m11_payment(
+        self,
+        user_id: int,
+        amount: Decimal,
+        tariff: Tariff,
+        invoice_id: UUID,
+    ) -> PaymentResult:
+        """Process payment with M11 simplified UX logic.
+
+        M11 Logic:
+        - If subscription is inactive: deduct subscription_fee, activate subscription
+        - Remaining tokens go to balance
+        - If subscription is active: all tokens go to balance
+
+        Args:
+            user_id: Telegram user ID
+            amount: Payment amount in RUB
+            tariff: Tariff with subscription settings
+            invoice_id: Invoice UUID for transaction records
+
+        Returns:
+            PaymentResult with details of what happened
+        """
+        user = await self.user_repo.get_by_id(user_id)
+        if not user:
+            raise NotFoundError(
+                message=f"User {user_id} not found",
+                details={"user_id": user_id},
+            )
+
+        # Convert rubles to tokens (1:1 ratio)
+        total_tokens = int(amount)
+        subscription_was_active = self.is_subscription_active(user)
+
+        subscription_fee_charged = 0
+        subscription_end: datetime | None = None
+        subscription_activated = False
+
+        if not subscription_was_active:
+            # First payment or subscription expired - charge subscription fee
+            subscription_fee_charged = tariff.subscription_fee
+            tokens_to_credit = total_tokens - subscription_fee_charged
+
+            # Activate subscription
+            subscription_end = calculate_subscription_end(
+                current_end=None,
+                unit=tariff.period_unit,
+                value=tariff.period_value,
+            )
+            await self.user_repo.update_subscription(user_id, subscription_end)
+            subscription_activated = True
+
+            logger.info(
+                "M11: Subscription activated for user %d until %s (fee: %d tokens)",
+                user_id,
+                subscription_end,
+                subscription_fee_charged,
+            )
+        else:
+            # Subscription active - all tokens go to balance
+            tokens_to_credit = total_tokens
+
+        # Credit tokens to balance
+        if tokens_to_credit > 0:
+            updated_user = await self.user_repo.update_balance(
+                user_id=user_id,
+                delta=tokens_to_credit,
+                expected_version=user.balance_version,
+            )
+            new_balance = updated_user.token_balance
+        else:
+            new_balance = user.token_balance
+
+        # Create transaction record
+        if subscription_activated:
+            description = f"Пополнение {int(amount)}₽: {subscription_fee_charged} ток. абонплата + {tokens_to_credit} ток. баланс"
+        else:
+            description = f"Пополнение баланса на {tokens_to_credit} токенов"
+
+        transaction = Transaction(
+            user_id=user_id,
+            type=TransactionType.TOPUP,
+            tokens_delta=tokens_to_credit,
+            balance_after=new_balance,
+            description=description,
+            invoice_id=invoice_id,
+            metadata_={
+                "amount_rub": str(amount),
+                "subscription_fee": subscription_fee_charged,
+                "subscription_activated": subscription_activated,
+            },
+        )
+        await self.transaction_repo.create(transaction)
+
+        logger.info(
+            "M11 payment processed: user=%d, amount=%s, tokens=%d, fee=%d, activated=%s",
+            user_id,
+            amount,
+            tokens_to_credit,
+            subscription_fee_charged,
+            subscription_activated,
+        )
+
+        return PaymentResult(
+            tokens_credited=tokens_to_credit,
+            subscription_fee_charged=subscription_fee_charged,
+            subscription_activated=subscription_activated,
+            subscription_end=subscription_end,
+            new_balance=new_balance,
+        )

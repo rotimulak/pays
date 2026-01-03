@@ -11,6 +11,15 @@
 3. Ручное продление через бота
 4. Включение/отключение автопродления
 
+### M11: Simplified Payment UX
+
+С M11 введена упрощённая модель подписки:
+
+- **Скрытые тарифы** — пользователь не выбирает тариф, просто пополняет баланс
+- **Гибкий период** — `period_unit` (hour/day/month) + `period_value`
+- **Subscription fee** — абонплата списывается при первом платеже или автопродлении
+- **Min payment** — минимальная сумма пополнения (по умолчанию 200₽)
+
 ---
 
 ## State Machine
@@ -54,17 +63,18 @@
 | `toggle_auto_renew(user_id)` | Переключить автопродление |
 | `manual_renew(user_id)` | Ручное продление |
 
-**Логика автопродления:**
+**Логика автопродления (M11):**
 
 ```
 1. Получить пользователя с блокировкой (FOR UPDATE)
 2. Проверить auto_renew == True
-3. Проверить баланс >= renewal_price
-4. Списать токены
-5. Продлить subscription_end на N дней
-6. Создать транзакцию типа SUBSCRIPTION
-7. Сбросить счётчик уведомлений
-8. Отправить уведомление об успехе
+3. Получить тариф → subscription_fee
+4. Проверить баланс >= subscription_fee
+5. Списать subscription_fee токенов
+6. Рассчитать новую дату: calculate_subscription_end(period_unit, period_value)
+7. Создать транзакцию типа SUBSCRIPTION
+8. Сбросить счётчик уведомлений
+9. Отправить уведомление об успехе
 ```
 
 **При недостатке средств:**
@@ -190,10 +200,19 @@ class TransactionType(Enum):
 
 ## Конфигурация
 
+### Настройки в Tariff (M11)
+
+| Поле | Default | Описание |
+|------|---------|----------|
+| `period_unit` | month | Единица периода (hour/day/month) |
+| `period_value` | 1 | Количество единиц |
+| `subscription_fee` | 100 | Абонплата (токенов) |
+| `min_payment` | 200.00 | Минимальный платёж (₽) |
+
+### Environment
+
 | Переменная | Default | Описание |
 |------------|---------|----------|
-| `SUBSCRIPTION_RENEWAL_DAYS` | 30 | Срок продления (дней) |
-| `SUBSCRIPTION_RENEWAL_PRICE` | 100 | Стоимость продления (токенов) |
 | `SUBSCRIPTION_NOTIFY_DAYS` | [3, 1, 0] | Дни для уведомлений |
 | `SUBSCRIPTION_GRACE_PERIOD_DAYS` | 0 | Grace period (опционально) |
 
@@ -204,21 +223,33 @@ class TransactionType(Enum):
 ```
 backend/src/
 ├── services/
-│   └── subscription_service.py   # Основной сервис
+│   ├── billing_service.py        # +calculate_subscription_end(), +process_m11_payment()
+│   └── subscription_service.py   # Основной сервис (M11: tariff-based)
 ├── tasks/
 │   ├── __init__.py               # Экспорт задач
 │   └── subscription_tasks.py     # Scheduled tasks
-├── bot/handlers/
-│   └── subscription.py           # /subscription handler
+├── bot/
+│   ├── handlers/
+│   │   ├── balance.py            # M11: экран баланса и FSM оплаты
+│   │   ├── start.py              # M11: упрощённое меню
+│   │   └── tariffs.py            # M11: редирект на баланс
+│   ├── keyboards/
+│   │   ├── balance.py            # M11: кнопки пополнения
+│   │   └── main_menu.py          # M11: 2 кнопки
+│   └── states/
+│       └── payment.py            # M11: PaymentStates FSM
 ├── db/
 │   ├── models/
+│   │   ├── tariff.py             # +PeriodUnit, +period_*, +subscription_fee, +min_payment
 │   │   ├── user.py               # +auto_renew, +last_subscription_notification
 │   │   └── transaction.py        # +SUBSCRIPTION type
 │   └── repositories/
+│       ├── tariff_repository.py  # +get_default_tariff()
 │       └── user_repository.py    # +методы для подписок
 └── migrations/versions/
     ├── 005_add_subscription_fields.py
-    └── 006_add_subscription_transaction_type.py
+    ├── 006_add_subscription_transaction_type.py
+    └── 007_add_tariff_period_fields.py  # M11
 ```
 
 ---

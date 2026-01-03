@@ -1,12 +1,22 @@
 import uuid
 from datetime import datetime
 from decimal import Decimal
+from enum import Enum
 
 from sqlalchemy import Boolean, CheckConstraint, Integer, Numeric, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.db.session import Base
+
+
+class PeriodUnit(str, Enum):
+    """Period unit for subscription duration."""
+
+    HOUR = "hour"  # for testing
+    DAY = "day"
+    MONTH = "month"
 
 
 class Tariff(Base):
@@ -50,7 +60,32 @@ class Tariff(Base):
         Integer,
         default=0,
         nullable=False,
-        comment="Subscription duration in days",
+        comment="Subscription duration in days (legacy, use period_unit/period_value)",
+    )
+    # M11: New period fields
+    period_unit: Mapped[PeriodUnit] = mapped_column(
+        SQLEnum(PeriodUnit, name="period_unit", create_constraint=True),
+        default=PeriodUnit.MONTH,
+        nullable=False,
+        comment="Period unit: hour/day/month",
+    )
+    period_value: Mapped[int] = mapped_column(
+        Integer,
+        default=1,
+        nullable=False,
+        comment="Number of period units",
+    )
+    subscription_fee: Mapped[int] = mapped_column(
+        Integer,
+        default=100,
+        nullable=False,
+        comment="Subscription fee in tokens per period",
+    )
+    min_payment: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("200.00"),
+        nullable=False,
+        comment="Minimum payment amount in RUB",
     )
     sort_order: Mapped[int] = mapped_column(
         Integer,
@@ -86,6 +121,9 @@ class Tariff(Base):
         CheckConstraint("price > 0", name="price_positive"),
         CheckConstraint("tokens >= 0", name="tokens_non_negative"),
         CheckConstraint("subscription_days >= 0", name="subscription_days_non_negative"),
+        CheckConstraint("period_value > 0", name="period_value_positive"),
+        CheckConstraint("subscription_fee >= 0", name="subscription_fee_non_negative"),
+        CheckConstraint("min_payment > 0", name="min_payment_positive"),
     )
 
     def __repr__(self) -> str:

@@ -40,42 +40,78 @@ class NotificationService:
         self,
         user_id: int,
         days_left: int,
+        balance: int | None = None,
+        subscription_fee: int | None = None,
     ) -> bool:
         """Send subscription expiring warning.
+
+        M11: Updated to show balance info and auto-renewal status.
 
         Args:
             user_id: Telegram user ID
             days_left: Days until subscription expires
+            balance: Current token balance (optional)
+            subscription_fee: Fee required for renewal (optional)
 
         Returns:
             True if message sent successfully
         """
+        # M11: Show balance and renewal info
+        balance_info = ""
+        if balance is not None and subscription_fee is not None:
+            if balance >= subscription_fee:
+                balance_info = (
+                    f"\n💳 Баланс: {balance} токенов\n"
+                    f"✅ Достаточно для автопродления ({subscription_fee} токенов)"
+                )
+            else:
+                balance_info = (
+                    f"\n💳 Баланс: {balance} токенов\n"
+                    f"⚠️ Недостаточно для автопродления (нужно {subscription_fee})"
+                )
+
         if days_left == 0:
             message = (
-                "Ваша подписка истекает сегодня!\n\n"
-                "Продлите подписку, чтобы не потерять доступ к функциям.\n\n"
-                "Выберите тариф: /tariffs"
+                "⏰ <b>Подписка истекает сегодня!</b>\n"
+                f"{balance_info}\n\n"
+                "Пополните баланс: /balance"
             )
         elif days_left == 1:
             message = (
-                "Ваша подписка истекает завтра!\n\n"
-                "Продлите подписку: /tariffs"
+                "⏰ <b>Подписка истекает завтра!</b>\n"
+                f"{balance_info}\n\n"
+                "Пополните баланс: /balance"
             )
         else:
             message = (
-                f"Ваша подписка истекает через {days_left} дней.\n\n"
-                "Продлите подписку: /tariffs"
+                f"⏰ <b>Подписка истекает через {days_left} дн.</b>\n"
+                f"{balance_info}\n\n"
+                "Пополните баланс: /balance"
             )
 
         return await self._send_message(user_id, message)
 
-    async def notify_subscription_expired(self, user_id: int) -> bool:
-        """Send subscription expired notification."""
+    async def notify_subscription_expired(
+        self,
+        user_id: int,
+        subscription_fee: int | None = None,
+        balance: int | None = None,
+    ) -> bool:
+        """Send subscription expired notification.
+
+        M11: Updated messaging to point to balance instead of tariffs.
+        """
+        balance_info = ""
+        if balance is not None and subscription_fee is not None:
+            balance_info = (
+                f"\n💳 Баланс: {balance} токенов\n"
+                f"Для продления нужно: {subscription_fee} токенов"
+            )
+
         message = (
-            "⚠️ <b>Ваша подписка истекла</b>\n\n"
-            "Чтобы продолжить пользоваться сервисом, "
-            "оформите новую подписку: /tariffs\n\n"
-            "Посмотреть детали: /subscription"
+            "⚠️ <b>Подписка деактивирована</b>\n"
+            f"{balance_info}\n\n"
+            "Пополните баланс для активации: /balance"
         )
         return await self._send_message(user_id, message)
 
@@ -128,10 +164,9 @@ class NotificationService:
         if reason == "insufficient_balance":
             message = (
                 "❌ <b>Не удалось продлить подписку</b>\n\n"
-                f"Для продления требуется: {required} токенов\n"
-                f"На вашем балансе: {available} токенов\n\n"
-                "Пополните баланс: /tariffs\n"
-                "Или отключите автопродление: /subscription"
+                f"Требуется: {required} токенов\n"
+                f"На балансе: {available} токенов\n\n"
+                "Пополните баланс: /balance"
             )
         else:
             message = (
@@ -158,17 +193,16 @@ class NotificationService:
             True if message sent successfully
         """
         if current_balance <= 5:
-            urgency = "Kriticheski"
+            urgency = "🔴 Критически"
         elif current_balance <= 10:
-            urgency = "Ochen"
+            urgency = "🟠 Очень"
         else:
-            urgency = "Vnimanie"
+            urgency = "🟡 Внимание:"
 
         message = (
-            f"{urgency} nizkij balans tokenov\n\n"
-            f"Na vashem balanse ostalos: <b>{current_balance}</b> tokenov\n\n"
-            "Popolnite balans, chtoby prodolzhit polzovatsya servisom.\n\n"
-            "Popolnit: /tariffs"
+            f"{urgency} низкий баланс токенов\n\n"
+            f"На балансе: <b>{current_balance}</b> токенов\n\n"
+            "Пополните баланс: /balance"
         )
         return await self._send_message(user_id, message)
 
