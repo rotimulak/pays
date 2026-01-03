@@ -49,5 +49,8 @@ async def show_tariffs_callback(callback: CallbackQuery, user: User) -> None:
         await callback.answer()
         return
 
-    await callback.message.edit_text(REDIRECT_TEXT, reply_markup=get_redirect_keyboard())
-    await callback.answer()
+    try:
+        await callback.message.edit_text(REDIRECT_TEXT, reply_markup=get_redirect_keyboard())
+        await callback.answer()
+    except Exception:
+        await callback.answer()

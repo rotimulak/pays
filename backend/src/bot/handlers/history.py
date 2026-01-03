@@ -42,6 +42,37 @@ async def cmd_history(
     await message.answer(text, reply_markup=keyboard)
 
 
+@router.callback_query(F.data == "show_history")
+async def show_history_callback(
+    callback: CallbackQuery,
+    user: User,
+    session: AsyncSession,
+) -> None:
+    """Show history from inline button."""
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    try:
+        service = TransactionService(session)
+        result = await service.get_user_transactions(
+            user_id=user.id,
+            limit=ITEMS_PER_PAGE,
+            offset=0,
+        )
+
+        text = format_history_message(result.items, result.total, 1)
+        keyboard = get_history_keyboard(
+            current_page=1,
+            total_items=result.total,
+        )
+
+        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.answer()
+    except Exception:
+        await callback.answer()
+
+
 @router.callback_query(PaginationCallback.filter(F.prefix == "history"))
 async def history_pagination(
     callback: CallbackQuery,
@@ -50,25 +81,30 @@ async def history_pagination(
     session: AsyncSession,
 ) -> None:
     """Handle history pagination."""
-    service = TransactionService(session)
+    if callback.message is None:
+        await callback.answer()
+        return
 
-    offset = (callback_data.page - 1) * ITEMS_PER_PAGE
-    result = await service.get_user_transactions(
-        user_id=user.id,
-        limit=ITEMS_PER_PAGE,
-        offset=offset,
-    )
+    try:
+        service = TransactionService(session)
 
-    text = format_history_message(result.items, result.total, callback_data.page)
-    keyboard = get_pagination_keyboard(
-        current_page=callback_data.page,
-        total_items=result.total,
-        items_per_page=ITEMS_PER_PAGE,
-        callback_prefix="history",
-    )
+        offset = (callback_data.page - 1) * ITEMS_PER_PAGE
+        result = await service.get_user_transactions(
+            user_id=user.id,
+            limit=ITEMS_PER_PAGE,
+            offset=offset,
+        )
 
-    await callback.message.edit_text(text, reply_markup=keyboard)
-    await callback.answer()
+        text = format_history_message(result.items, result.total, callback_data.page)
+        keyboard = get_history_keyboard(
+            current_page=callback_data.page,
+            total_items=result.total,
+        )
+
+        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.answer()
+    except Exception:
+        await callback.answer()
 
 
 def format_history_message(
@@ -97,6 +133,37 @@ def format_history_message(
     lines.append(f"\nСтраница {page} из {total_pages}")
 
     return "\n".join(lines)
+
+
+def get_history_keyboard(current_page: int, total_items: int):
+    """Create history keyboard with pagination and back button."""
+    total_pages = (total_items + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
+
+    builder = InlineKeyboardBuilder()
+
+    # Pagination buttons
+    if current_page > 1:
+        builder.button(
+            text="◀️ Назад",
+            callback_data=PaginationCallback(prefix="history", page=current_page - 1),
+        )
+
+    if current_page < total_pages:
+        builder.button(
+            text="Вперёд ▶️",
+            callback_data=PaginationCallback(prefix="history", page=current_page + 1),
+        )
+
+    # Back to balance button
+    builder.button(text="◀️ К балансу", callback_data="balance")
+
+    # Layout: pagination in one row, back button in another
+    if total_pages > 1:
+        builder.adjust(2, 1)
+    else:
+        builder.adjust(1)
+
+    return builder.as_markup()
 
 
 def get_pagination_keyboard(

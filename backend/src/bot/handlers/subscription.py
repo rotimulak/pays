@@ -133,25 +133,32 @@ async def on_refresh_subscription(
     session: AsyncSession,
 ) -> None:
     """Refresh subscription status."""
-    notification_service = NotificationService(get_bot())
-    subscription_service = SubscriptionService(session, notification_service)
-
-    # Refresh user from DB
-    from src.db.repositories.user_repository import UserRepository
-    user_repo = UserRepository(session)
-    fresh_user = await user_repo.get_by_id(user.id)
-
-    if fresh_user is None:
-        await callback.answer("Oshibka: polzovatel ne najden")
+    if callback.message is None:
+        await callback.answer()
         return
 
-    sub_status = await subscription_service.get_subscription_status(fresh_user)
+    try:
+        notification_service = NotificationService(get_bot())
+        subscription_service = SubscriptionService(session, notification_service)
 
-    text = format_subscription_message(fresh_user, sub_status)
-    keyboard = get_subscription_keyboard(sub_status)
+        # Refresh user from DB
+        from src.db.repositories.user_repository import UserRepository
+        user_repo = UserRepository(session)
+        fresh_user = await user_repo.get_by_id(user.id)
 
-    await callback.message.edit_text(text, reply_markup=keyboard)
-    await callback.answer("Obnovleno")
+        if fresh_user is None:
+            await callback.answer("Ошибка: пользователь не найден")
+            return
+
+        sub_status = await subscription_service.get_subscription_status(fresh_user)
+
+        text = format_subscription_message(fresh_user, sub_status)
+        keyboard = get_subscription_keyboard(sub_status)
+
+        await callback.message.edit_text(text, reply_markup=keyboard)
+        await callback.answer("Обновлено")
+    except Exception:
+        await callback.answer()
 
 
 @router.callback_query(F.data == "subscription:toggle_auto")
@@ -161,16 +168,20 @@ async def on_toggle_auto_renew(
     session: AsyncSession,
 ) -> None:
     """Toggle auto-renewal setting."""
-    notification_service = NotificationService(get_bot())
-    subscription_service = SubscriptionService(session, notification_service)
+    if callback.message is None:
+        await callback.answer()
+        return
 
     try:
+        notification_service = NotificationService(get_bot())
+        subscription_service = SubscriptionService(session, notification_service)
+
         new_value = await subscription_service.toggle_auto_renew(user.id)
 
         if new_value:
-            await callback.answer("Avtoprodlenie vklyucheno")
+            await callback.answer("Автопродление включено")
         else:
-            await callback.answer("Avtoprodlenie otklyucheno")
+            await callback.answer("Автопродление отключено")
 
         # Refresh the message
         from src.db.repositories.user_repository import UserRepository
@@ -183,8 +194,8 @@ async def on_toggle_auto_renew(
             keyboard = get_subscription_keyboard(sub_status)
             await callback.message.edit_text(text, reply_markup=keyboard)
 
-    except Exception as e:
-        await callback.answer(f"Oshibka: {e}")
+    except Exception:
+        await callback.answer()
 
 
 @router.callback_query(F.data == "subscription:renew")
@@ -194,25 +205,29 @@ async def on_renew_subscription(
     session: AsyncSession,
 ) -> None:
     """Manually renew subscription."""
-    notification_service = NotificationService(get_bot())
-    subscription_service = SubscriptionService(session, notification_service)
-
-    renewal_price = settings.subscription_renewal_price
-
-    # Check balance first
-    if user.token_balance < renewal_price:
-        await callback.answer(
-            f"Nedostatochno tokenov. Nuzhno: {renewal_price}, est: {user.token_balance}",
-            show_alert=True,
-        )
+    if callback.message is None:
+        await callback.answer()
         return
 
     try:
+        notification_service = NotificationService(get_bot())
+        subscription_service = SubscriptionService(session, notification_service)
+
+        renewal_price = settings.subscription_renewal_price
+
+        # Check balance first
+        if user.token_balance < renewal_price:
+            await callback.answer(
+                f"Недостаточно токенов. Нужно: {renewal_price}, есть: {user.token_balance}",
+                show_alert=True,
+            )
+            return
+
         success = await subscription_service.manual_renew(user.id)
 
         if success:
             await callback.answer(
-                f"Podpiska prodlena na {settings.subscription_renewal_days} dnej!",
+                f"Подписка продлена на {settings.subscription_renewal_days} дней!",
                 show_alert=True,
             )
 
@@ -228,9 +243,9 @@ async def on_renew_subscription(
                 await callback.message.edit_text(text, reply_markup=keyboard)
         else:
             await callback.answer(
-                "Ne udalos prodlit podpisku. Provertte balans.",
+                "Не удалось продлить подписку. Проверьте баланс.",
                 show_alert=True,
             )
 
-    except Exception as e:
-        await callback.answer(f"Oshibka: {e}", show_alert=True)
+    except Exception:
+        await callback.answer()

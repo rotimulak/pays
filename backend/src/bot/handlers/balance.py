@@ -134,15 +134,14 @@ async def on_balance_callback(
         await callback.answer()
         return
 
-    text, min_payment = await _get_balance_text(user, session)
-
     try:
+        text, min_payment = await _get_balance_text(user, session)
         await callback.message.edit_text(text, reply_markup=get_balance_keyboard(min_payment))
+        await callback.answer("Обновлено" if callback.data == "refresh_balance" else None)
     except Exception:
-        # Message not modified (same content)
-        pass
-
-    await callback.answer("Обновлено" if callback.data == "refresh_balance" else None)
+        # Message not modified (same content) or other error
+        # Always answer callback to prevent "loading" state on button
+        await callback.answer()
 
 
 @router.callback_query(F.data.startswith("pay:"))

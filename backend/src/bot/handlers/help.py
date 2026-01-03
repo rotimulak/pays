@@ -51,9 +51,12 @@ async def on_help_callback(callback: CallbackQuery) -> None:
         await callback.answer()
         return
 
-    support = getattr(settings, "support_username", "support")
-    min_payment = 200
-    text = HELP_TEXT.format(min_payment=min_payment, support=support)
+    try:
+        support = getattr(settings, "support_username", "support")
+        min_payment = 200
+        text = HELP_TEXT.format(min_payment=min_payment, support=support)
 
-    await callback.message.edit_text(text, reply_markup=get_help_keyboard())
-    await callback.answer()
+        await callback.message.edit_text(text, reply_markup=get_help_keyboard())
+        await callback.answer()
+    except Exception:
+        await callback.answer()
