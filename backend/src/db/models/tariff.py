@@ -64,7 +64,7 @@ class Tariff(Base):
     )
     # M11: New period fields
     period_unit: Mapped[PeriodUnit] = mapped_column(
-        SQLEnum(PeriodUnit, name="period_unit", create_constraint=True),
+        SQLEnum(PeriodUnit, name="period_unit", create_constraint=True, values_callable=lambda x: [e.value for e in x]),
         default=PeriodUnit.MONTH,
         nullable=False,
         comment="Period unit: hour/day/month",

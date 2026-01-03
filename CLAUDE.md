@@ -50,3 +50,28 @@ Path: `C:\Program Files\PostgreSQL\17\bin\`
 ## Style
 
 Docs: русский | Code: English
+
+## Code Conventions
+
+### SQLAlchemy Enums
+При создании PostgreSQL enum в SQLAlchemy **всегда** используй `values_callable` для синхронизации значений между Python и PostgreSQL:
+
+```python
+from sqlalchemy import Enum as SQLEnum
+
+class MyEnum(str, Enum):
+    VALUE_ONE = "value_one"  # name=VALUE_ONE, value=value_one
+
+# ПРАВИЛЬНО: используем values из Python enum
+period_unit: Mapped[MyEnum] = mapped_column(
+    SQLEnum(MyEnum, name="my_enum", values_callable=lambda x: [e.value for e in x]),
+    ...
+)
+
+# В миграции тоже lowercase:
+sa.Enum("value_one", "value_two", name="my_enum")
+```
+
+Это гарантирует, что:
+- В PostgreSQL хранятся lowercase значения (`value_one`)
+- SQLAlchemy корректно маппит их на Python enum члены (`MyEnum.VALUE_ONE`)
