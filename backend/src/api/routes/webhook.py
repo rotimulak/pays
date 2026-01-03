@@ -8,6 +8,7 @@ from fastapi import APIRouter, Form, HTTPException
 from fastapi.responses import PlainTextResponse
 
 from src.db.session import get_session
+from src.db.models.invoice import InvoiceStatus
 from src.db.repositories.invoice_repository import InvoiceRepository
 from src.db.repositories.tariff_repository import TariffRepository
 from src.payments.providers import get_payment_provider
@@ -108,7 +109,7 @@ async def robokassa_result_url(
             # Update invoice status
             await invoice_repo.update_status(
                 invoice_id=invoice.id,
-                status=invoice_repo.model.status.type.enum_class.PAID,
+                status=InvoiceStatus.PAID,
             )
 
             logger.info(
