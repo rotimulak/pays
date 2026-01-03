@@ -69,7 +69,9 @@ ln -sf /etc/nginx/sites-available/hhhelper /etc/nginx/sites-enabled/
 nginx -t
 
 echo "9. Getting SSL certificate..."
-certbot --nginx -d hhhelper.arsenal0.space --non-interactive --agree-tos --email rotimulak@gmail.com || true
+# TODO: Раскомментировать когда DNS заработает
+# certbot --nginx -d hhhelper.ru --non-interactive --agree-tos --email rotimulak@gmail.com || true
+echo "SSL: Пропущено (DNS ещё не настроен). Запустите вручную: certbot --nginx -d hhhelper.ru"
 
 echo "10. Restarting nginx..."
 systemctl restart nginx
@@ -78,7 +80,7 @@ echo ""
 echo -e "${GREEN}=== Deployment Complete ===${NC}"
 echo ""
 echo "Services:"
-echo "  - API:  https://hhhelper.arsenal0.space"
+echo "  - API:  http://217.171.146.4 (после DNS: https://hhhelper.ru)"
 echo "  - Bot:  Running in polling mode"
 echo ""
 echo "Commands:"

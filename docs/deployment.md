@@ -143,7 +143,8 @@ certbot --nginx -d your-domain.com
 
 Пример:
 ```bash
-curl https://hhhelper.arsenal0.space/health
+curl http://217.171.146.4/health  # временно по IP
+# curl https://hhhelper.ru/health  # после настройки DNS + SSL
 # {"status":"ok","service":"hhhelper-api"}
 ```
 
@@ -180,12 +181,16 @@ docker-compose exec api bash
 ## Nginx конфигурация
 
 ```nginx
+# Временная конфигурация (без SSL, по IP)
 server {
-    listen 443 ssl http2;
-    server_name hhhelper.arsenal0.space;
+    listen 80;
+    server_name 217.171.146.4;
+    # После DNS: server_name hhhelper.ru www.hhhelper.ru;
 
-    ssl_certificate /etc/letsencrypt/live/hhhelper.arsenal0.space/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/hhhelper.arsenal0.space/privkey.pem;
+    # После получения SSL раскомментировать:
+    # listen 443 ssl http2;
+    # ssl_certificate /etc/letsencrypt/live/hhhelper.ru/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/hhhelper.ru/privkey.pem;
 
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
