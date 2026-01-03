@@ -8,6 +8,8 @@ from fastapi import APIRouter, Form, HTTPException
 from fastapi.responses import PlainTextResponse
 
 from src.db.session import get_session
+from src.db.repositories.invoice_repository import InvoiceRepository
+from src.db.repositories.tariff_repository import TariffRepository
 from src.payments.providers import get_payment_provider
 from src.payments.schemas import WebhookData
 from src.services.audit_service import AuditService
@@ -83,15 +85,49 @@ async def robokassa_result_url(
             logger.warning("Could not initialize notification service: %s", e)
 
         try:
-            invoice = await billing_service.process_successful_payment(
-                invoice_id=webhook_data.shp_invoice_id
+            # Get invoice and tariff for M11 processing
+            invoice_repo = InvoiceRepository(session)
+            tariff_repo = TariffRepository(session)
+
+            invoice = await invoice_repo.get_by_id(webhook_data.shp_invoice_id)
+            if not invoice:
+                raise HTTPException(status_code=404, detail="Invoice not found")
+
+            tariff = await tariff_repo.get_by_id(invoice.tariff_id)
+            if not tariff:
+                raise HTTPException(status_code=404, detail="Tariff not found")
+
+            # Use M11 payment processing logic
+            result = await billing_service.process_m11_payment(
+                user_id=webhook_data.shp_user_id,
+                amount=webhook_data.out_sum,
+                tariff=tariff,
+                invoice_id=webhook_data.shp_invoice_id,
             )
+
+            # Update invoice status
+            await invoice_repo.update_status(
+                invoice_id=invoice.id,
+                status=invoice_repo.model.status.type.enum_class.PAID,
+            )
+
             logger.info(
-                "Payment processed: inv_id=%d, invoice_id=%s, status=%s",
+                "M11 Payment processed: inv_id=%d, tokens=%d, fee=%d, activated=%s",
                 InvId,
-                invoice.id,
-                invoice.status.value,
+                result.tokens_credited,
+                result.subscription_fee_charged,
+                result.subscription_activated,
             )
+
+            # Send notification
+            if billing_service._notification_service:
+                await billing_service._notification_service.notify_m11_payment_success(
+                    user_id=webhook_data.shp_user_id,
+                    result=result,
+                    amount=webhook_data.out_sum,
+                )
+        except HTTPException:
+            raise
         except Exception as e:
             logger.error("Payment processing failed: %s", e)
             raise HTTPException(status_code=500, detail="Payment processing failed")

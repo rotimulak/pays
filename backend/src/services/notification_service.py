@@ -6,7 +6,10 @@ from datetime import datetime
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 
+from decimal import Decimal
+
 from src.db.models.invoice import Invoice
+from src.services.billing_service import PaymentResult
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,51 @@ class NotificationService:
         """
         message = self._format_payment_success(invoice, new_balance)
         return await self._send_message(user_id, message)
+
+    async def notify_m11_payment_success(
+        self,
+        user_id: int,
+        result: PaymentResult,
+        amount: Decimal,
+    ) -> bool:
+        """Send M11 payment success notification.
+
+        Shows subscription fee deduction and tokens credited separately.
+
+        Args:
+            user_id: Telegram user ID
+            result: PaymentResult from billing service
+            amount: Payment amount in RUB
+
+        Returns:
+            True if message sent successfully
+        """
+        message = self._format_m11_payment_success(result, amount)
+        return await self._send_message(user_id, message)
+
+    def _format_m11_payment_success(
+        self,
+        result: PaymentResult,
+        amount: Decimal,
+    ) -> str:
+        """Format M11 payment success message."""
+        parts = ["✅ <b>Оплата успешно проведена!</b>\n\n"]
+
+        parts.append(f"💰 Сумма: {amount}₽\n")
+
+        if result.subscription_activated:
+            parts.append(f"📅 Абонплата: {result.subscription_fee_charged} токенов\n")
+            parts.append(f"💳 На баланс: {result.tokens_credited} токенов\n")
+            if result.subscription_end:
+                formatted_date = result.subscription_end.strftime("%d.%m.%Y")
+                parts.append(f"\n🎉 Подписка активирована до: {formatted_date}\n")
+        else:
+            parts.append(f"💳 Начислено токенов: {result.tokens_credited}\n")
+
+        parts.append(f"\n📊 Текущий баланс: {result.new_balance} токенов")
+        parts.append("\n\nСпасибо за покупку!")
+
+        return "".join(parts)
 
     async def notify_subscription_expiring(
         self,
