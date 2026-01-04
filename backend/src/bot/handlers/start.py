@@ -7,12 +7,16 @@ from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
 
 from src.bot.keyboards.main_menu import get_main_menu, get_main_menu_inline
+from src.core.config import settings
 from src.db.models.user import User
 
 router = Router(name="start")
 
 # Версия билда (устанавливается при деплое)
 BUILD_VERSION = os.getenv("BUILD_VERSION", "dev")
+
+# URL для юридических документов
+OFERTA_URL = f"{settings.webhook_base_url}/legal/oferta"
 
 
 @router.message(CommandStart())
@@ -23,9 +27,12 @@ async def cmd_start(message: Message, user: User) -> None:
         f"Привет, {first_name}!\n\n"
         "Я помогу пользоваться сервисом и управлять своей подпиской.\n\n"
         "Выбери действие в меню ниже:\n\n"
+        f'<a href="{OFERTA_URL}">Публичная оферта</a>\n\n'
         f"<i>v{BUILD_VERSION}</i>"
     )
-    await message.answer(text, reply_markup=get_main_menu(), parse_mode="HTML")
+    await message.answer(
+        text, reply_markup=get_main_menu(), parse_mode="HTML", disable_web_page_preview=True
+    )
 
 
 @router.callback_query(F.data == "main_menu")

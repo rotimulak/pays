@@ -28,7 +28,19 @@
       "Bash(ssh-copy-id:*)",
       "Bash(git add:*)",
       "Bash(git reset:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(pip install:*)",
+      "Bash(python -m alembic:*)",
+      "Bash(\"C:\\Program Files\\PostgreSQL\\17\\bin\\psql.exe\" -U postgres -d telegram_billing -c \"SELECT slug, name, price, period_unit, period_value, subscription_fee, min_payment FROM tariffs WHERE is_active = true;\")",
+      "Bash(ssh root@hhhelper.arsenal0.space \"cd /opt/hhhelper && git pull origin main && cd backend && docker-compose build --no-cache && docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d\")",
+      "Bash(ssh root@hhhelper.arsenal0.space \"cd /opt/hhhelper && docker-compose logs --tail=100 bot\")",
+      "Bash(ssh root@hhhelper.arsenal0.space \"cd /opt/hhhelper && git pull origin main && cd backend && docker compose build --no-cache && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d\")",
+      "Bash(ssh root@hhhelper.arsenal0.space \"docker ps && echo ''---'' && docker-compose -f /opt/hhhelper/backend/docker-compose.yml -f /opt/hhhelper/backend/docker-compose.prod.yml ps\")",
+      "Bash(nslookup:*)",
+      "Bash(ssh:*)",
+      "Bash(curl:*)",
+      "Bash(powershell -Command \"[System.IO.File]::ReadAllBytes(''d:\\Sources\\pays\\legal\\oferta_631625760179.txt'')[0..50] -join '',''\")",
+      "Bash(powershell -Command \"[System.Text.Encoding]::GetEncoding(''''windows-1251'''').GetString([System.IO.File]::ReadAllBytes(''''d:\\Sources\\pays\\legal\\oferta_631625760179.txt''''))\")"
     ],
     "deny": [],
     "ask": []
