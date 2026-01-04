@@ -6,6 +6,7 @@ from aiogram import F, Router
 from aiogram.filters import CommandStart
 from aiogram.types import CallbackQuery, Message
 
+from src.bot.handlers.healthcheck import check_runner_health
 from src.bot.keyboards.main_menu import get_main_menu, get_main_menu_inline
 from src.core.config import settings
 from src.db.models.user import User
@@ -23,13 +24,28 @@ OFERTA_URL = f"{settings.webhook_base_url}/legal/oferta"
 async def cmd_start(message: Message, user: User) -> None:
     """Handle /start command."""
     first_name = user.first_name or "друг"
-    text = (
-        f"Привет, {first_name}!\n\n"
-        "Я помогу пользоваться сервисом и управлять своей подпиской.\n\n"
-        "Выбери действие в меню ниже:\n\n"
-        f'<a href="{OFERTA_URL}">Публичная оферта</a>\n\n'
-        f"<i>v{BUILD_VERSION}</i>"
-    )
+
+    # Check runner health
+    is_healthy, status_msg = await check_runner_health()
+
+    if is_healthy:
+        text = (
+            f"Привет, {first_name}!\n\n"
+            "Я помогу пользоваться сервисом и управлять своей подпиской.\n\n"
+            "Выбери действие в меню ниже:\n\n"
+            f'<a href="{OFERTA_URL}">Публичная оферта</a>\n\n'
+            f"<i>v{BUILD_VERSION}</i>"
+        )
+    else:
+        text = (
+            f"Привет, {first_name}!\n\n"
+            "⚠️ <b>К сожалению, сервис временно недоступен.</b>\n\n"
+            "Мы уже работаем над восстановлением. "
+            "Пожалуйста, попробуйте позже.\n\n"
+            f'<a href="{OFERTA_URL}">Публичная оферта</a>\n\n'
+            f"<i>v{BUILD_VERSION}</i>"
+        )
+
     await message.answer(
         text, reply_markup=get_main_menu(), parse_mode="HTML", disable_web_page_preview=True
     )

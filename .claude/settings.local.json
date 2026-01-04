@@ -40,7 +40,8 @@
       "Bash(ssh:*)",
       "Bash(curl:*)",
       "Bash(powershell -Command \"[System.IO.File]::ReadAllBytes(''d:\\Sources\\pays\\legal\\oferta_631625760179.txt'')[0..50] -join '',''\")",
-      "Bash(powershell -Command \"[System.Text.Encoding]::GetEncoding(''''windows-1251'''').GetString([System.IO.File]::ReadAllBytes(''''d:\\Sources\\pays\\legal\\oferta_631625760179.txt''''))\")"
+      "Bash(powershell -Command \"[System.Text.Encoding]::GetEncoding(''''windows-1251'''').GetString([System.IO.File]::ReadAllBytes(''''d:\\Sources\\pays\\legal\\oferta_631625760179.txt''''))\")",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
