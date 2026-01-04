@@ -6,8 +6,8 @@ from aiogram import Bot
 from aiogram.types import BotCommand
 
 from src.bot import create_bot, create_dispatcher
-from src.bot.handlers import balance, buy, healthcheck, help, history, profile, promo, start, tariffs
-from src.bot.middlewares import AuthMiddleware, DbSessionMiddleware
+from src.bot.handlers import balance, buy, cv, healthcheck, help, history, profile, promo, start, tariffs
+from src.bot.middlewares import AuthMiddleware, CancelRunnerMiddleware, DbSessionMiddleware
 from src.core.config import settings
 from src.core.logging import get_logger, setup_logging
 
@@ -20,6 +20,7 @@ async def set_commands(bot: Bot) -> None:
     """Set bot commands for menu."""
     commands = [
         BotCommand(command="start", description="Начать работу"),
+        BotCommand(command="cv", description="Анализ CV"),
         BotCommand(command="profile", description="Мой профиль"),
         BotCommand(command="tariffs", description="Тарифы"),
         BotCommand(command="balance", description="Баланс"),
@@ -51,6 +52,7 @@ async def main() -> None:
     dp.callback_query.middleware(DbSessionMiddleware())
     dp.message.middleware(AuthMiddleware())
     dp.callback_query.middleware(AuthMiddleware())
+    dp.message.middleware(CancelRunnerMiddleware())
 
     # Register routers
     dp.include_router(start.router)
@@ -62,6 +64,7 @@ async def main() -> None:
     dp.include_router(promo.router)
     dp.include_router(help.router)
     dp.include_router(healthcheck.router)
+    dp.include_router(cv.router)
 
     # Register hooks
     dp.startup.register(on_startup)

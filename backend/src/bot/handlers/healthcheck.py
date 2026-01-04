@@ -5,10 +5,9 @@ from aiogram import Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
-router = Router(name="healthcheck")
+from src.services.runner import get_runner_client
 
-RUNNER_HEALTH_URL = "http://155.212.245.141:8000/health"
-RUNNER_API_KEY = "runner-health-secret-key-2024"
+router = Router(name="healthcheck")
 
 
 async def check_runner_health() -> tuple[bool, str]:
@@ -17,26 +16,8 @@ async def check_runner_health() -> tuple[bool, str]:
     Returns:
         Tuple of (is_healthy, status_message)
     """
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(
-                RUNNER_HEALTH_URL,
-                headers={"X-API-Key": RUNNER_API_KEY},
-                timeout=aiohttp.ClientTimeout(total=10),
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    status = data.get("status", "unknown")
-                    if status == "healthy":
-                        return True, "healthy"
-                    return False, f"status: {status}"
-                return False, f"HTTP {response.status}"
-    except aiohttp.ClientError as e:
-        return False, f"{type(e).__name__}"
-    except TimeoutError:
-        return False, "timeout"
-    except Exception as e:
-        return False, str(e)
+    runner = get_runner_client()
+    return await runner.health_check()
 
 
 @router.message(Command("healthcheck"))
@@ -44,11 +25,13 @@ async def cmd_healthcheck(message: Message) -> None:
     """Check external runner service health."""
     await message.answer("🔄 Проверяю статус runner-сервиса...")
 
+    runner = get_runner_client()
+
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                RUNNER_HEALTH_URL,
-                headers={"X-API-Key": RUNNER_API_KEY},
+                f"{runner.base_url}/health",
+                headers={"X-API-Key": runner.api_key},
                 timeout=aiohttp.ClientTimeout(total=10),
             ) as response:
                 if response.status == 200:

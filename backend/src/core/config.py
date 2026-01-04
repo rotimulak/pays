@@ -131,5 +131,15 @@ class Settings(BaseSettings):
         description="Grace period after expiry (days)",
     )
 
+    # Runner service
+    runner_base_url: str = Field(
+        default="http://155.212.245.141:8000",
+        description="Base URL for HHH Runner API",
+    )
+    runner_api_key: str = Field(
+        default="runner-health-secret-key-2024",
+        description="API key for Runner authentication",
+    )
+
 
 settings = Settings()
