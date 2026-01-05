@@ -33,11 +33,14 @@ async def set_commands(bot: Bot) -> None:
 
 async def on_startup(bot: Bot) -> None:
     """Startup hook."""
-    await set_commands(bot)
+    try:
+        await set_commands(bot)
+    except Exception as e:
+        logger.warning(f"Failed to set commands: {e}")
     logger.info("Bot started")
 
 
-async def on_shutdown(_bot: Bot) -> None:
+async def on_shutdown(bot: Bot) -> None:
     """Shutdown hook."""
     logger.info("Bot stopped")
 
