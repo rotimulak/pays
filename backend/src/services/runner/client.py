@@ -8,7 +8,10 @@ from typing import AsyncIterator
 
 import aiohttp
 
+from src.core.logging import get_logger
 from .models import StreamMessage
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -125,36 +128,64 @@ class RunnerClient(BaseRunnerClient):
     ) -> AsyncIterator[StreamMessage]:
         """SSE стрим задачи."""
         self._cancel_flags[user_id] = asyncio.Event()
+        full_url = f"{self.base_url}{stream_url}"
+        logger.info(f"Starting stream from {full_url}")
 
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{self.base_url}{stream_url}",
+                    full_url,
                     headers={"X-API-Key": self.api_key},
                     timeout=aiohttp.ClientTimeout(total=300),
                 ) as response:
                     if response.status != 200:
-                        yield StreamMessage(type="error", content=f"HTTP {response.status}")
+                        error_text = await response.text()
+                        logger.error(f"Stream error: HTTP {response.status}, body: {error_text[:200]}")
+                        yield StreamMessage(type="error", content=f"HTTP {response.status}: {error_text[:100]}")
                         return
 
+                    has_data = False
                     async for line in response.content:
                         if self._cancel_flags[user_id].is_set():
                             yield StreamMessage(type="cancelled", content="")
                             return
 
                         line_str = line.decode("utf-8").strip()
+                        if not line_str:
+                            continue
+
+                        logger.debug(f"SSE line: {line_str[:100]}")
+
                         if line_str.startswith("data: "):
+                            has_data = True
                             try:
                                 msg = json.loads(line_str[6:])
+                                msg_type = msg.get("type", "result")
+                                msg_content = msg.get("content", "")
+
+                                if msg_type == "error" and not msg_content:
+                                    msg_content = "Неизвестная ошибка сервера"
+
                                 yield StreamMessage(
-                                    type=msg.get("type", "result"),
-                                    content=msg.get("content", ""),
+                                    type=msg_type,
+                                    content=msg_content,
                                     metadata=msg.get("metadata"),
                                 )
-                                if msg.get("type") == "done":
+                                if msg_type == "done":
                                     return
                             except json.JSONDecodeError:
                                 yield StreamMessage(type="result", content=line_str[6:])
+
+                    if not has_data:
+                        logger.warning("Stream ended without data")
+                        yield StreamMessage(type="error", content="Стрим завершился без данных")
+
+        except aiohttp.ClientError as e:
+            logger.error(f"Stream client error: {e}")
+            yield StreamMessage(type="error", content=f"Ошибка соединения: {type(e).__name__}")
+        except Exception as e:
+            logger.exception(f"Stream unexpected error: {e}")
+            yield StreamMessage(type="error", content=f"Ошибка: {e}")
         finally:
             self._cancel_flags.pop(user_id, None)
 
