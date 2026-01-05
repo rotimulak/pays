@@ -3,11 +3,22 @@
 import asyncio
 import json
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import AsyncIterator
 
 import aiohttp
 
 from .models import StreamMessage
+
+
+@dataclass
+class TaskResponse:
+    """Response from task creation."""
+
+    task_id: str
+    status: str
+    queue_position: int
+    stream_url: str
 
 
 class BaseRunnerClient(ABC):
@@ -22,13 +33,21 @@ class BaseRunnerClient(ABC):
         pass
 
     @abstractmethod
-    async def stream_request(
+    async def create_task(
         self,
         endpoint: str,
         data: aiohttp.FormData,
+    ) -> TaskResponse | str:
+        """Создать задачу. Возвращает TaskResponse или строку ошибки."""
+        pass
+
+    @abstractmethod
+    async def stream_task(
+        self,
+        stream_url: str,
         user_id: int,
     ) -> AsyncIterator[StreamMessage]:
-        """Стриминговый запрос к Runner."""
+        """SSE стрим задачи."""
         pass
 
     @abstractmethod
@@ -68,20 +87,49 @@ class RunnerClient(BaseRunnerClient):
         except Exception as e:
             return False, str(e)
 
-    async def stream_request(
+    async def create_task(
         self,
         endpoint: str,
         data: aiohttp.FormData,
-        user_id: int,
-    ) -> AsyncIterator[StreamMessage]:
-        """SSE стрим от Runner."""
-        self._cancel_flags[user_id] = asyncio.Event()
-
+    ) -> TaskResponse | str:
+        """Создать задачу на Runner."""
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.post(
                     f"{self.base_url}{endpoint}",
                     data=data,
+                    headers={"X-API-Key": self.api_key},
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as response:
+                    if response.status != 200:
+                        return f"HTTP {response.status}"
+
+                    resp_data = await response.json()
+                    return TaskResponse(
+                        task_id=resp_data["task_id"],
+                        status=resp_data["status"],
+                        queue_position=resp_data.get("queue_position", 0),
+                        stream_url=resp_data["stream_url"],
+                    )
+        except aiohttp.ClientError as e:
+            return f"{type(e).__name__}: {e}"
+        except KeyError as e:
+            return f"Invalid response: missing {e}"
+        except Exception as e:
+            return str(e)
+
+    async def stream_task(
+        self,
+        stream_url: str,
+        user_id: int,
+    ) -> AsyncIterator[StreamMessage]:
+        """SSE стрим задачи."""
+        self._cancel_flags[user_id] = asyncio.Event()
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{self.base_url}{stream_url}",
                     headers={"X-API-Key": self.api_key},
                     timeout=aiohttp.ClientTimeout(total=300),
                 ) as response:

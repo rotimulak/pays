@@ -2,13 +2,14 @@
 
 from src.core.config import settings
 
-from .client import BaseRunnerClient, RunnerClient
+from .client import BaseRunnerClient, RunnerClient, TaskResponse
 from .cv_analyzer import CVAnalyzer
 from .models import CVFile, FileValidationError, StreamMessage
 
 __all__ = [
     "BaseRunnerClient",
     "RunnerClient",
+    "TaskResponse",
     "CVAnalyzer",
     "CVFile",
     "FileValidationError",
