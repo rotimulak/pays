@@ -70,11 +70,14 @@ async def handle_cv_file(message: Message, state: FSMContext) -> None:
         elif msg.type == "error":
             await message.answer(f"❌ {msg.content}")
             break
-        elif msg.type == "done":
+        elif msg.type in ("done", "complete"):
             await message.answer("✅ Анализ завершён!")
             break
+        elif msg.type == "progress":
+            # Пропускаем технические прогресс-сообщения
+            continue
         else:
-            # Отправляем результат пользователю
+            # Отправляем результат пользователю (type: result)
             if msg.content:
                 await message.answer(msg.content)
 
