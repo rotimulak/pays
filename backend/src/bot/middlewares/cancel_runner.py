@@ -19,10 +19,13 @@ class CancelRunnerMiddleware(BaseMiddleware):
         event: Message,
         data: dict[str, Any],
     ) -> Any:
-        if isinstance(event, Message) and event.text:
+        if isinstance(event, Message) and event.text and event.from_user:
             command = event.text.split()[0] if event.text else ""
             if command in self.TRIGGER_COMMANDS:
-                runner = get_runner_client()
-                await runner.cancel_stream(event.from_user.id)
+                try:
+                    runner = get_runner_client()
+                    await runner.cancel_stream(event.from_user.id)
+                except Exception:
+                    pass  # Не блокируем обработку команды из-за ошибки отмены стрима
 
         return await handler(event, data)

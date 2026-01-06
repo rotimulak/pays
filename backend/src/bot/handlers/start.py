@@ -26,7 +26,10 @@ async def cmd_start(message: Message, user: User) -> None:
     first_name = user.first_name or "друг"
 
     # Check runner health
-    is_healthy, status_msg = await check_runner_health()
+    try:
+        is_healthy, status_msg = await check_runner_health()
+    except Exception:
+        is_healthy = False
 
     if is_healthy:
         text = (
