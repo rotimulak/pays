@@ -3,10 +3,16 @@
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Document, Message
+from aiogram.types import BufferedInputFile, Document, Message
 
 from src.bot.states.cv import CVStates
-from src.services.runner import CVFile, FileValidationError, get_cv_analyzer
+from src.core.logging import get_logger
+from src.services.runner import CVFile, FileValidationError, TaskResult, get_cv_analyzer, get_runner_client
+
+logger = get_logger(__name__)
+
+# Telegram message limit
+MAX_MESSAGE_LENGTH = 4096
 
 router = Router(name="cv")
 
@@ -71,7 +77,11 @@ async def handle_cv_file(message: Message, state: FSMContext) -> None:
             await message.answer(f"❌ {msg.content}")
             break
         elif msg.type in ("done", "complete"):
-            await message.answer("✅ Анализ завершён!")
+            # Получаем результат с Runner
+            if msg.task_id:
+                await _send_cv_result(message, msg.task_id)
+            else:
+                await message.answer("✅ Анализ завершён!")
             break
         elif msg.type == "progress":
             # Пропускаем технические прогресс-сообщения
@@ -82,6 +92,45 @@ async def handle_cv_file(message: Message, state: FSMContext) -> None:
                 await message.answer(msg.content)
 
     await state.clear()
+
+
+async def _send_cv_result(message: Message, task_id: str) -> None:
+    """Получить и отправить результат анализа CV."""
+    runner = get_runner_client()
+
+    # Получаем результат
+    result = await runner.get_result(task_id)
+
+    if isinstance(result, str):
+        # Ошибка получения результата
+        logger.error(f"Failed to get CV result: {result}")
+        await message.answer(f"❌ Ошибка получения результата: {result}")
+        return
+
+    if not result.content:
+        await message.answer("❌ Результат анализа пуст")
+        return
+
+    # Отправляем текст (разбиваем если длинный)
+    content = result.content
+    if len(content) <= MAX_MESSAGE_LENGTH:
+        await message.answer(content)
+    else:
+        # Разбиваем на части
+        for i in range(0, len(content), MAX_MESSAGE_LENGTH):
+            chunk = content[i : i + MAX_MESSAGE_LENGTH]
+            await message.answer(chunk)
+
+    # Также отправляем как файл для удобства
+    file_bytes = await runner.download_result(task_id)
+    if isinstance(file_bytes, bytes):
+        filename = result.result_file.split("/")[-1] if result.result_file else "cv_analysis.md"
+        await message.answer_document(
+            document=BufferedInputFile(file_bytes, filename=filename),
+            caption="📎 Результат анализа в формате Markdown",
+        )
+
+    await message.answer("✅ Анализ завершён!")
 
 
 @router.message(CVStates.waiting_for_file)

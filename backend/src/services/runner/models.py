@@ -8,9 +8,20 @@ from enum import Enum
 class StreamMessage:
     """Сообщение из SSE стрима Runner."""
 
-    type: str  # "progress" | "result" | "error" | "done" | "cancelled"
+    type: str  # "progress" | "result" | "error" | "done" | "cancelled" | "complete"
     content: str
     metadata: dict | None = None
+    task_id: str | None = None  # task_id для получения результата
+
+
+@dataclass
+class TaskResult:
+    """Результат выполнения задачи."""
+
+    task_id: str
+    status: str
+    result_file: str | None
+    content: str
 
 
 class FileValidationError(Enum):

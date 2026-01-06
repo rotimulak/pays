@@ -9,7 +9,7 @@ from typing import AsyncIterator
 import aiohttp
 
 from src.core.logging import get_logger
-from .models import StreamMessage
+from .models import StreamMessage, TaskResult
 
 logger = get_logger(__name__)
 
@@ -56,6 +56,16 @@ class BaseRunnerClient(ABC):
     @abstractmethod
     async def cancel_stream(self, user_id: int) -> bool:
         """Отменить активный стрим для пользователя."""
+        pass
+
+    @abstractmethod
+    async def get_result(self, task_id: str) -> TaskResult | str:
+        """Получить результат задачи (JSON с content). Возвращает TaskResult или строку ошибки."""
+        pass
+
+    @abstractmethod
+    async def download_result(self, task_id: str) -> bytes | str:
+        """Скачать файл результата. Возвращает bytes или строку ошибки."""
         pass
 
 
@@ -129,6 +139,10 @@ class RunnerClient(BaseRunnerClient):
         """SSE стрим задачи."""
         self._cancel_flags[user_id] = asyncio.Event()
         full_url = f"{self.base_url}{stream_url}"
+
+        # Извлекаем task_id из URL: /api/tasks/{task_id}/stream
+        task_id = stream_url.split("/")[3] if "/tasks/" in stream_url else None
+
         logger.info(f"Starting stream from {full_url}")
 
         try:
@@ -166,12 +180,14 @@ class RunnerClient(BaseRunnerClient):
                                 if msg_type == "error" and not msg_content:
                                     msg_content = "Неизвестная ошибка сервера"
 
+                                # Передаём task_id в complete/done сообщениях
                                 yield StreamMessage(
                                     type=msg_type,
                                     content=msg_content,
                                     metadata=msg.get("metadata"),
+                                    task_id=task_id if msg_type in ("done", "complete") else None,
                                 )
-                                if msg_type == "done":
+                                if msg_type in ("done", "complete"):
                                     return
                             except json.JSONDecodeError:
                                 yield StreamMessage(type="result", content=line_str[6:])
@@ -195,3 +211,53 @@ class RunnerClient(BaseRunnerClient):
             self._cancel_flags[user_id].set()
             return True
         return False
+
+    async def get_result(self, task_id: str) -> TaskResult | str:
+        """Получить результат задачи (JSON с content)."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{self.base_url}/api/tasks/{task_id}/result",
+                    headers={"X-API-Key": self.api_key},
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error(f"Get result error: HTTP {response.status}, body: {error_text[:200]}")
+                        return f"HTTP {response.status}"
+
+                    data = await response.json()
+                    return TaskResult(
+                        task_id=data.get("task_id", task_id),
+                        status=data.get("status", "unknown"),
+                        result_file=data.get("result_file"),
+                        content=data.get("content", ""),
+                    )
+        except aiohttp.ClientError as e:
+            logger.error(f"Get result client error: {e}")
+            return f"{type(e).__name__}: {e}"
+        except Exception as e:
+            logger.exception(f"Get result unexpected error: {e}")
+            return str(e)
+
+    async def download_result(self, task_id: str) -> bytes | str:
+        """Скачать файл результата."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{self.base_url}/api/tasks/{task_id}/result/download",
+                    headers={"X-API-Key": self.api_key},
+                    timeout=aiohttp.ClientTimeout(total=60),
+                ) as response:
+                    if response.status != 200:
+                        error_text = await response.text()
+                        logger.error(f"Download result error: HTTP {response.status}, body: {error_text[:200]}")
+                        return f"HTTP {response.status}"
+
+                    return await response.read()
+        except aiohttp.ClientError as e:
+            logger.error(f"Download result client error: {e}")
+            return f"{type(e).__name__}: {e}"
+        except Exception as e:
+            logger.exception(f"Download result unexpected error: {e}")
+            return str(e)
