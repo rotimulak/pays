@@ -2,6 +2,7 @@
 
 from src.core.config import settings
 
+from .apply_analyzer import ApplyAnalyzer
 from .client import BaseRunnerClient, RunnerClient, TaskResponse
 from .cv_analyzer import CVAnalyzer
 from .models import BotOutput, BotOutputType, CVFile, FileValidationError, StreamMessage, TaskResult
@@ -12,6 +13,7 @@ __all__ = [
     "TaskResponse",
     "TaskResult",
     "CVAnalyzer",
+    "ApplyAnalyzer",
     "CVFile",
     "FileValidationError",
     "StreamMessage",
@@ -19,10 +21,12 @@ __all__ = [
     "BotOutputType",
     "get_runner_client",
     "get_cv_analyzer",
+    "get_apply_analyzer",
 ]
 
 _runner: BaseRunnerClient | None = None
 _cv_analyzer: CVAnalyzer | None = None
+_apply_analyzer: ApplyAnalyzer | None = None
 
 
 def get_runner_client() -> BaseRunnerClient:
@@ -42,3 +46,11 @@ def get_cv_analyzer() -> CVAnalyzer:
     if _cv_analyzer is None:
         _cv_analyzer = CVAnalyzer(get_runner_client())
     return _cv_analyzer
+
+
+def get_apply_analyzer() -> ApplyAnalyzer:
+    """Получить анализатор Apply (singleton)."""
+    global _apply_analyzer
+    if _apply_analyzer is None:
+        _apply_analyzer = ApplyAnalyzer(get_runner_client())
+    return _apply_analyzer
