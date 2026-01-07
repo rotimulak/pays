@@ -1,8 +1,10 @@
 """CV analysis service with billing integration."""
 
+import asyncio
 from dataclasses import dataclass
 
 from aiogram import Bot
+from aiogram.exceptions import TelegramNetworkError
 from aiogram.types import BufferedInputFile
 
 from src.core.exceptions import (
@@ -20,6 +22,10 @@ CV_ANALYSIS_COST = 1
 
 # Лимит длины сообщения Telegram
 MAX_MESSAGE_LENGTH = 4096
+
+# Retry настройки
+MAX_RETRIES = 3
+RETRY_DELAY = 1.0  # секунд
 
 
 @dataclass
@@ -185,21 +191,61 @@ class CVService:
                 await self._send_text_safe(chat_id, output.content)
 
         elif output.output_type == BotOutputType.FILE and output.content and output.filename:
-            file_bytes = output.content.encode("utf-8")
-            await self.bot.send_document(
+            await self._send_document_safe(
                 chat_id=chat_id,
-                document=BufferedInputFile(file_bytes, output.filename),
+                content=output.content,
+                filename=output.filename,
                 caption=output.caption,
             )
 
     async def _send_text_safe(self, chat_id: int, text: str) -> None:
-        """Отправить текст, разбивая на части если нужно."""
+        """Отправить текст, разбивая на части если нужно. С retry."""
         if len(text) <= MAX_MESSAGE_LENGTH:
-            await self.bot.send_message(chat_id, text)
+            await self._send_with_retry(
+                self.bot.send_message, chat_id, text
+            )
         else:
             for i in range(0, len(text), MAX_MESSAGE_LENGTH):
                 chunk = text[i : i + MAX_MESSAGE_LENGTH]
-                await self.bot.send_message(chat_id, chunk)
+                await self._send_with_retry(
+                    self.bot.send_message, chat_id, chunk
+                )
+
+    async def _send_document_safe(
+        self,
+        chat_id: int,
+        content: str,
+        filename: str,
+        caption: str | None,
+    ) -> None:
+        """Отправить документ с retry."""
+        file_bytes = content.encode("utf-8")
+        await self._send_with_retry(
+            self.bot.send_document,
+            chat_id=chat_id,
+            document=BufferedInputFile(file_bytes, filename),
+            caption=caption,
+        )
+
+    async def _send_with_retry(self, method, *args, **kwargs) -> None:
+        """Выполнить метод с retry при сетевых ошибках."""
+        last_error = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                await method(*args, **kwargs)
+                return
+            except TelegramNetworkError as e:
+                last_error = e
+                if attempt < MAX_RETRIES - 1:
+                    logger.warning(
+                        f"Telegram network error (attempt {attempt + 1}/{MAX_RETRIES}): {e}"
+                    )
+                    await asyncio.sleep(RETRY_DELAY * (attempt + 1))
+                else:
+                    logger.error(f"Telegram network error after {MAX_RETRIES} attempts: {e}")
+
+        if last_error:
+            raise last_error
 
     async def cancel(self, user_id: int) -> bool:
         """Отменить текущий анализ."""
