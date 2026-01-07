@@ -4,7 +4,7 @@ from src.core.config import settings
 
 from .client import BaseRunnerClient, RunnerClient, TaskResponse
 from .cv_analyzer import CVAnalyzer
-from .models import CVFile, FileValidationError, StreamMessage, TaskResult
+from .models import BotOutput, BotOutputType, CVFile, FileValidationError, StreamMessage, TaskResult
 
 __all__ = [
     "BaseRunnerClient",
@@ -15,6 +15,8 @@ __all__ = [
     "CVFile",
     "FileValidationError",
     "StreamMessage",
+    "BotOutput",
+    "BotOutputType",
     "get_runner_client",
     "get_cv_analyzer",
 ]

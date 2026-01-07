@@ -180,6 +180,17 @@ class RunnerClient(BaseRunnerClient):
                                 if msg_type == "error" and not msg_content:
                                     msg_content = "Неизвестная ошибка сервера"
 
+                                # Обработка bot_output с дополнительными полями
+                                if msg_type == "bot_output":
+                                    yield StreamMessage(
+                                        type="bot_output",
+                                        content=msg_content,
+                                        output_type=msg.get("output_type"),
+                                        filename=msg.get("filename"),
+                                        caption=msg.get("caption"),
+                                    )
+                                    continue
+
                                 # Передаём task_id в complete/done сообщениях
                                 yield StreamMessage(
                                     type=msg_type,
