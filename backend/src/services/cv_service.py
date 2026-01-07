@@ -120,7 +120,6 @@ class CVService:
                     user_id=user_id,
                     amount=CV_ANALYSIS_COST,
                     description="Анализ CV",
-                    idempotency_key=f"cv_analysis_{task_id}" if task_id else None,
                     metadata={"task_id": task_id},
                 )
                 return CVAnalysisResult(success=True, tokens_spent=CV_ANALYSIS_COST)

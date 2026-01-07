@@ -75,12 +75,6 @@ class Transaction(Base):
         nullable=True,
         comment="Additional transaction data",
     )
-    idempotency_key: Mapped[str | None] = mapped_column(
-        Text,
-        nullable=True,
-        unique=True,
-        comment="Idempotency key for deduplication",
-    )
     created_at: Mapped[datetime] = mapped_column(
         default=datetime.utcnow,
         nullable=False,

@@ -121,7 +121,6 @@ class TokenService:
         user_id: int,
         amount: int,
         description: str,
-        idempotency_key: str | None = None,
         metadata: dict | None = None,
     ) -> SpendResult:
         """Spend tokens from user's balance.
@@ -130,7 +129,6 @@ class TokenService:
             user_id: Telegram user ID
             amount: Amount to spend (positive)
             description: Description for transaction
-            idempotency_key: Optional key for idempotency
             metadata: Optional additional data
 
         Returns:
@@ -146,23 +144,6 @@ class TokenService:
         """
         if amount <= 0:
             raise ValueError("Amount must be positive")
-
-        # Check idempotency first
-        if idempotency_key:
-            existing = await self.transaction_repo.get_by_idempotency(idempotency_key)
-            if existing:
-                logger.info(
-                    "Returning existing transaction: %s (idempotency_key=%s)",
-                    existing.id,
-                    idempotency_key,
-                )
-                return SpendResult(
-                    transaction_id=existing.id,
-                    tokens_spent=-existing.tokens_delta,
-                    balance_before=existing.balance_after - existing.tokens_delta,
-                    balance_after=existing.balance_after,
-                    user_id=user_id,
-                )
 
         # Get user with current version for optimistic locking
         user = await self.user_repo.get_by_id(user_id)
@@ -211,7 +192,6 @@ class TokenService:
             tokens_delta=-amount,
             balance_after=new_balance,
             description=description,
-            idempotency_key=idempotency_key,
             metadata_=metadata or {},
         )
         await self.transaction_repo.create(transaction)

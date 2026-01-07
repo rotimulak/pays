@@ -39,22 +39,6 @@ class TransactionRepository:
         )
         return result.scalar_one_or_none()
 
-    async def get_by_idempotency(self, key: str) -> Transaction | None:
-        """Get transaction by idempotency key.
-
-        Used to check if an operation was already performed.
-
-        Args:
-            key: Idempotency key
-
-        Returns:
-            Transaction if found, None otherwise
-        """
-        result = await self.session.execute(
-            select(Transaction).where(Transaction.idempotency_key == key)
-        )
-        return result.scalar_one_or_none()
-
     async def get_by_user(
         self,
         user_id: int,
