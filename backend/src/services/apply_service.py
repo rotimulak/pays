@@ -152,7 +152,12 @@ class ApplyService:
             # Для ошибки 404 (нет резюме) не показываем техническое сообщение
             # Дружелюбное сообщение покажется в хендлере
             error_lower = message.content.lower()
-            if not ("404" in error_lower or "not found" in error_lower):
+            is_cv_not_found = (
+                "404" in error_lower
+                or "cv not found" in error_lower
+                or "резюме не найдено" in error_lower
+            )
+            if not is_cv_not_found:
                 await self.bot.send_message(chat_id, f"❌ {message.content}")
             return "error"
 

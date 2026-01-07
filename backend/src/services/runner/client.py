@@ -115,7 +115,14 @@ class RunnerClient(BaseRunnerClient):
                     timeout=aiohttp.ClientTimeout(total=30),
                 ) as response:
                     if response.status != 200:
-                        return f"HTTP {response.status}"
+                        # Попытаемся получить detail из JSON для более понятной ошибки
+                        try:
+                            error_data = await response.json()
+                            error_msg = error_data.get("detail", f"HTTP {response.status}")
+                        except Exception:
+                            error_msg = f"HTTP {response.status}"
+                        logger.error(f"Runner API error: {error_msg}")
+                        return error_msg
 
                     resp_data = await response.json()
                     return TaskResponse(

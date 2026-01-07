@@ -111,7 +111,12 @@ async def handle_vacancy_url(message: Message, state: FSMContext, session: Async
     elif result.error:
         # Проверяем, является ли ошибка отсутствием резюме
         error_lower = result.error.lower()
-        if "404" in error_lower or "not found" in error_lower or "резюме не найдено" in error_lower:
+        is_cv_not_found = (
+            "404" in error_lower
+            or "cv not found" in error_lower
+            or "резюме не найдено" in error_lower
+        )
+        if is_cv_not_found:
             await message.answer(ERROR_NO_CV)
         # Иначе ошибка уже отправлена через bot_output в _handle_stream_message
 
