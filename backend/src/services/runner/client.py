@@ -153,11 +153,12 @@ class RunnerClient(BaseRunnerClient):
         logger.info(f"Starting stream from {full_url}")
 
         try:
-            async with aiohttp.ClientSession() as session:
+            # Увеличиваем таймаут для долгих операций и читаем чанками для больших SSE
+            timeout = aiohttp.ClientTimeout(total=600, sock_read=120)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(
                     full_url,
                     headers={"X-API-Key": self.api_key},
-                    timeout=aiohttp.ClientTimeout(total=300),
                 ) as response:
                     if response.status != 200:
                         error_text = await response.text()
@@ -166,49 +167,63 @@ class RunnerClient(BaseRunnerClient):
                         return
 
                     has_data = False
-                    async for line in response.content:
+                    buffer = b""
+
+                    # Читаем чанками, чтобы избежать "Chunk too big"
+                    async for chunk in response.content.iter_chunked(1024 * 1024):  # 1 МБ чанки
                         if self._cancel_flags[user_id].is_set():
                             yield StreamMessage(type="cancelled", content="")
                             return
 
-                        line_str = line.decode("utf-8").strip()
-                        if not line_str:
-                            continue
+                        buffer += chunk
 
-                        logger.debug(f"SSE line: {line_str[:100]}")
+                        # Разбиваем buffer на строки
+                        while b"\n" in buffer:
+                            line_bytes, buffer = buffer.split(b"\n", 1)
 
-                        if line_str.startswith("data: "):
-                            has_data = True
                             try:
-                                msg = json.loads(line_str[6:])
-                                msg_type = msg.get("type", "result")
-                                msg_content = msg.get("content", "")
+                                line_str = line_bytes.decode("utf-8").strip()
+                            except UnicodeDecodeError:
+                                logger.warning("Failed to decode SSE line, skipping")
+                                continue
 
-                                if msg_type == "error" and not msg_content:
-                                    msg_content = "Неизвестная ошибка сервера"
+                            if not line_str:
+                                continue
 
-                                # Обработка bot_output с дополнительными полями
-                                if msg_type == "bot_output":
+                            logger.debug(f"SSE line: {line_str[:100]}")
+
+                            if line_str.startswith("data: "):
+                                has_data = True
+                                try:
+                                    msg = json.loads(line_str[6:])
+                                    msg_type = msg.get("type", "result")
+                                    msg_content = msg.get("content", "")
+
+                                    if msg_type == "error" and not msg_content:
+                                        msg_content = "Неизвестная ошибка сервера"
+
+                                    # Обработка bot_output с дополнительными полями
+                                    if msg_type == "bot_output":
+                                        yield StreamMessage(
+                                            type="bot_output",
+                                            content=msg_content,
+                                            output_type=msg.get("output_type"),
+                                            filename=msg.get("filename"),
+                                            caption=msg.get("caption"),
+                                        )
+                                        continue
+
+                                    # Передаём task_id в complete/done сообщениях
                                     yield StreamMessage(
-                                        type="bot_output",
+                                        type=msg_type,
                                         content=msg_content,
-                                        output_type=msg.get("output_type"),
-                                        filename=msg.get("filename"),
-                                        caption=msg.get("caption"),
+                                        metadata=msg.get("metadata"),
+                                        task_id=task_id if msg_type in ("done", "complete") else None,
                                     )
-                                    continue
-
-                                # Передаём task_id в complete/done сообщениях
-                                yield StreamMessage(
-                                    type=msg_type,
-                                    content=msg_content,
-                                    metadata=msg.get("metadata"),
-                                    task_id=task_id if msg_type in ("done", "complete") else None,
-                                )
-                                if msg_type in ("done", "complete"):
-                                    return
-                            except json.JSONDecodeError:
-                                yield StreamMessage(type="result", content=line_str[6:])
+                                    if msg_type in ("done", "complete"):
+                                        return
+                                except json.JSONDecodeError:
+                                    yield StreamMessage(type="result", content=line_str[6:])
 
                     if not has_data:
                         logger.warning("Stream ended without data")
