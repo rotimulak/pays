@@ -190,6 +190,10 @@ class ApplyService:
         - text: {"output_type": "text", "content": "Текст сообщения"}
         - file: {"output_type": "file", "content": "содержимое", "filename": "...", "caption": "..."}
         """
+        logger.info(
+            f"bot_output received: output_type={message.output_type}, "
+            f"filename={message.filename}, content_len={len(message.content) if message.content else 0}"
+        )
         output = message.as_bot_output()
         if not output:
             logger.warning(f"Invalid bot_output: output_type={message.output_type}")

@@ -190,7 +190,7 @@ class RunnerClient(BaseRunnerClient):
                             if not line_str:
                                 continue
 
-                            logger.debug(f"SSE line: {line_str[:100]}")
+                            logger.info(f"SSE line: {line_str[:200]}")
 
                             if line_str.startswith("data: "):
                                 has_data = True
