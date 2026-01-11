@@ -95,7 +95,7 @@ async def _get_balance_text(user: User, session: AsyncSession) -> tuple[str, Dec
 
     if is_active:
         text = BALANCE_ACTIVE_TEMPLATE.format(
-            user_id=user.telegram_id,
+            user_id=user.id,
             username=username_display,
             balance=user.token_balance,
             subscription_end=user.subscription_end.strftime("%d.%m.%Y"),
@@ -104,7 +104,7 @@ async def _get_balance_text(user: User, session: AsyncSession) -> tuple[str, Dec
         )
     else:
         text = BALANCE_INACTIVE_TEMPLATE.format(
-            user_id=user.telegram_id,
+            user_id=user.id,
             username=username_display,
             balance=user.token_balance,
             subscription_fee=subscription_fee,

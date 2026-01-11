@@ -137,7 +137,7 @@ async def on_cmd_cv(
 ) -> None:
     """Handle CV button - start CV analysis flow."""
     token_service = TokenService(session)
-    can_spend, reason = await token_service.can_spend(user.telegram_id, CV_ANALYSIS_COST)
+    can_spend, reason = await token_service.can_spend(user.id, CV_ANALYSIS_COST)
 
     if not can_spend:
         await callback.answer(f"❌ {reason}", show_alert=True)
@@ -164,7 +164,7 @@ async def on_cmd_skills(
 ) -> None:
     """Handle Skills button - start skills analysis flow."""
     token_service = TokenService(session)
-    can_spend, reason = await token_service.can_spend(user.telegram_id, SKILLS_COST)
+    can_spend, reason = await token_service.can_spend(user.id, SKILLS_COST)
 
     if not can_spend:
         await callback.answer(f"❌ {reason}", show_alert=True)
@@ -192,7 +192,7 @@ async def on_cmd_apply(
 ) -> None:
     """Handle Apply button - start apply flow."""
     token_service = TokenService(session)
-    can_spend, reason = await token_service.can_spend(user.telegram_id, APPLY_COST)
+    can_spend, reason = await token_service.can_spend(user.id, APPLY_COST)
 
     if not can_spend:
         await callback.answer(f"❌ {reason}", show_alert=True)
