@@ -6,7 +6,7 @@ from aiogram import Bot
 from aiogram.types import BotCommand
 
 from src.bot import create_bot, create_dispatcher
-from src.bot.handlers import apply, balance, buy, cv, healthcheck, help, history, profile, promo, start, tariffs
+from src.bot.handlers import apply, balance, buy, cv, healthcheck, help, skills, start
 from src.bot.middlewares import AuthMiddleware, CancelRunnerMiddleware, DbSessionMiddleware
 from src.core.config import settings
 from src.core.logging import get_logger, setup_logging
@@ -22,12 +22,8 @@ async def set_commands(bot: Bot) -> None:
         BotCommand(command="start", description="Начать работу"),
         BotCommand(command="cv", description="Анализ CV"),
         BotCommand(command="apply", description="Отклик на вакансию"),
-        BotCommand(command="profile", description="Мой профиль"),
-        BotCommand(command="tariffs", description="Тарифы"),
+        BotCommand(command="skills", description="Усилить резюме"),
         BotCommand(command="balance", description="Баланс"),
-        BotCommand(command="history", description="История"),
-        BotCommand(command="promo", description="Ввести промокод"),
-        BotCommand(command="help", description="Помощь"),
     ]
     await bot.set_my_commands(commands)
 
@@ -60,16 +56,13 @@ async def main() -> None:
 
     # Register routers
     dp.include_router(start.router)
-    dp.include_router(profile.router)
-    dp.include_router(tariffs.router)
     dp.include_router(buy.router)
     dp.include_router(balance.router)
-    dp.include_router(history.router)
-    dp.include_router(promo.router)
     dp.include_router(help.router)
     dp.include_router(healthcheck.router)
     dp.include_router(cv.router)
     dp.include_router(apply.router)
+    dp.include_router(skills.router)
 
     # Register hooks
     dp.startup.register(on_startup)

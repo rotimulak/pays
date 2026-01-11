@@ -6,6 +6,7 @@ from .apply_analyzer import ApplyAnalyzer
 from .client import BaseRunnerClient, RunnerClient, TaskResponse
 from .cv_analyzer import CVAnalyzer
 from .models import BotOutput, BotOutputType, CVFile, FileValidationError, StreamMessage, TaskResult
+from .skills_analyzer import SkillsAnalyzer
 
 __all__ = [
     "BaseRunnerClient",
@@ -14,6 +15,7 @@ __all__ = [
     "TaskResult",
     "CVAnalyzer",
     "ApplyAnalyzer",
+    "SkillsAnalyzer",
     "CVFile",
     "FileValidationError",
     "StreamMessage",
@@ -22,11 +24,13 @@ __all__ = [
     "get_runner_client",
     "get_cv_analyzer",
     "get_apply_analyzer",
+    "get_skills_analyzer",
 ]
 
 _runner: BaseRunnerClient | None = None
 _cv_analyzer: CVAnalyzer | None = None
 _apply_analyzer: ApplyAnalyzer | None = None
+_skills_analyzer: SkillsAnalyzer | None = None
 
 
 def get_runner_client() -> BaseRunnerClient:
@@ -54,3 +58,11 @@ def get_apply_analyzer() -> ApplyAnalyzer:
     if _apply_analyzer is None:
         _apply_analyzer = ApplyAnalyzer(get_runner_client())
     return _apply_analyzer
+
+
+def get_skills_analyzer() -> SkillsAnalyzer:
+    """Получить анализатор Skills (singleton)."""
+    global _skills_analyzer
+    if _skills_analyzer is None:
+        _skills_analyzer = SkillsAnalyzer(get_runner_client())
+    return _skills_analyzer

@@ -25,7 +25,10 @@ router = Router()
 # ========== Message Templates ==========
 
 BALANCE_ACTIVE_TEMPLATE = """
-📊 <b>Ваш баланс</b>
+📊 <b>Ваш профиль</b>
+
+🆔 ID: <code>{user_id}</code>
+👤 Username: {username}
 
 💳 Баланс: <b>{balance}</b> токенов
 📅 Подписка активна до: <b>{subscription_end}</b>
@@ -37,7 +40,10 @@ BALANCE_ACTIVE_TEMPLATE = """
 """
 
 BALANCE_INACTIVE_TEMPLATE = """
-📊 <b>Ваш баланс</b>
+📊 <b>Ваш профиль</b>
+
+🆔 ID: <code>{user_id}</code>
+👤 Username: {username}
 
 💳 Баланс: <b>{balance}</b> токенов
 ⚠️ Подписка неактивна
@@ -85,9 +91,12 @@ async def _get_balance_text(user: User, session: AsyncSession) -> tuple[str, Dec
 
     now = datetime.utcnow()
     is_active = user.subscription_end is not None and user.subscription_end > now
+    username_display = f"@{user.username}" if user.username else "не указан"
 
     if is_active:
         text = BALANCE_ACTIVE_TEMPLATE.format(
+            user_id=user.telegram_id,
+            username=username_display,
             balance=user.token_balance,
             subscription_end=user.subscription_end.strftime("%d.%m.%Y"),
             subscription_fee=subscription_fee,
@@ -95,6 +104,8 @@ async def _get_balance_text(user: User, session: AsyncSession) -> tuple[str, Dec
         )
     else:
         text = BALANCE_INACTIVE_TEMPLATE.format(
+            user_id=user.telegram_id,
+            username=username_display,
             balance=user.token_balance,
             subscription_fee=subscription_fee,
             min_payment=int(min_payment),
