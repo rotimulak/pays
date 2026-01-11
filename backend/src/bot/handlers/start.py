@@ -40,15 +40,7 @@ async def cmd_start(message: Message, user: User) -> None:
     except Exception:
         is_healthy = False
 
-    if is_healthy:
-        text = (
-            f"Привет, {first_name}!\n\n"
-            "Я помогу пользоваться сервисом и управлять своей подпиской.\n\n"
-            "Выбери действие:\n\n"
-            f'<a href="{OFERTA_URL}">Публичная оферта</a>\n\n'
-            f"<i>v{BUILD_VERSION}</i>"
-        )
-    else:
+    if not is_healthy:
         text = (
             f"Привет, {first_name}!\n\n"
             "⚠️ <b>К сожалению, сервис временно недоступен.</b>\n\n"
@@ -57,21 +49,74 @@ async def cmd_start(message: Message, user: User) -> None:
             f'<a href="{OFERTA_URL}">Публичная оферта</a>\n\n'
             f"<i>v{BUILD_VERSION}</i>"
         )
+        await message.answer(text, parse_mode="HTML", disable_web_page_preview=True)
+        return
 
-    # Send reply keyboard
-    await message.answer(
-        text,
-        reply_markup=get_main_menu() if is_healthy else None,
-        parse_mode="HTML",
-        disable_web_page_preview=True,
+    # Intro message 1 - Overview
+    intro_1 = (
+        f"🚀 Привет, {first_name}! Я помогу тебе с поиском работы на hh.ru:\n\n"
+        "• Проанализирую резюме и дам рекомендации\n"
+        "• Подскажу, какие навыки добавить под рынок\n"
+        "• Сгенерирую персональный отклик на вакансию\n\n"
+        "💡 <b>Рекомендуемый порядок:</b>\n"
+        "CV → SKILLS → APPLY\n\n"
+        "Сначала загрузи резюме, потом усиль его под рынок, а затем откликайся на вакансии."
     )
 
-    # Send inline buttons for quick actions
-    if is_healthy:
-        await message.answer(
-            "👇 Быстрые действия:",
-            reply_markup=get_start_menu_inline(),
-        )
+    # Intro message 2 - CV
+    intro_2 = (
+        "📄 <b>CV</b> — Анализ резюме\n\n"
+        "<b>Вход:</b> файл резюме (PDF или TXT, до 1 МБ)\n\n"
+        "<b>Что получишь:</b>\n"
+        "• Анализ по критериям HR и ATS-систем\n"
+        "• Конкретные рекомендации по улучшению\n"
+        "• «Конструктор откликов» — шаблон для будущих писем"
+    )
+
+    # Intro message 3 - Skills
+    intro_3 = (
+        "💪 <b>SKILLS</b> — Усилить резюме\n\n"
+        "<b>Вход:</b> список ссылок на вакансии hh.ru (до 20 штук)\n"
+        "⚠️ Требуется загруженное резюме (сначала используй CV)\n\n"
+        "<b>Что получишь:</b>\n"
+        "• Анализ требований по всем вакансиям\n"
+        "• Топ навыков с частотой упоминания (например: «Excel — 4/5 вакансий»)\n"
+        "• Готовые формулировки для добавления в резюме"
+    )
+
+    # Intro message 4 - Apply
+    intro_4 = (
+        "💼 <b>APPLY</b> — Отклик на вакансию\n\n"
+        "<b>Вход:</b> ссылка на вакансию hh.ru\n"
+        "⚠️ Требуется загруженное резюме (сначала используй CV)\n\n"
+        "<b>Что получишь:</b>\n"
+        "• Персонализированное сопроводительное письмо\n"
+        "• Учёт требований вакансии и твоего опыта\n"
+        "• Готовый текст для копирования в отклик"
+    )
+
+    # Send all intro messages
+    await message.answer(intro_1, parse_mode="HTML")
+    await message.answer(intro_2, parse_mode="HTML")
+    await message.answer(intro_3, parse_mode="HTML")
+    await message.answer(intro_4, parse_mode="HTML")
+
+    # Send footer with legal link and version
+    footer = (
+        f'<a href="{OFERTA_URL}">Публичная оферта</a> · '
+        f"<i>v{BUILD_VERSION}</i>"
+    )
+    await message.answer(footer, parse_mode="HTML", disable_web_page_preview=True)
+
+    # Send reply keyboard + inline buttons
+    await message.answer(
+        "👇 Выбери действие:",
+        reply_markup=get_main_menu(),
+    )
+    await message.answer(
+        "Или используй быстрые кнопки:",
+        reply_markup=get_start_menu_inline(),
+    )
 
 
 @router.callback_query(F.data == "main_menu")
