@@ -60,7 +60,8 @@ async def cmd_start(message: Message, user: User) -> None:
         "• Сгенерирую персональный отклик на вакансию\n\n"
         "💡 <b>Рекомендуемый порядок:</b>\n"
         "CV → SKILLS → APPLY\n\n"
-        "Сначала загрузи резюме, потом усиль его под рынок, а затем откликайся на вакансии."
+        "Сначала загрузи резюме, потом усиль его под рынок, а затем откликайся на вакансии.\n\n"
+        f'<a href="{OFERTA_URL}">Публичная оферта</a> · <i>v{BUILD_VERSION}</i>'
     )
 
     # Intro message 2 - CV
@@ -96,17 +97,10 @@ async def cmd_start(message: Message, user: User) -> None:
     )
 
     # Send all intro messages
-    await message.answer(intro_1, parse_mode="HTML")
+    await message.answer(intro_1, parse_mode="HTML", disable_web_page_preview=True)
     await message.answer(intro_2, parse_mode="HTML")
     await message.answer(intro_3, parse_mode="HTML")
     await message.answer(intro_4, parse_mode="HTML")
-
-    # Send footer with legal link and version
-    footer = (
-        f'<a href="{OFERTA_URL}">Публичная оферта</a> · '
-        f"<i>v{BUILD_VERSION}</i>"
-    )
-    await message.answer(footer, parse_mode="HTML", disable_web_page_preview=True)
 
     # Send reply keyboard + inline buttons
     await message.answer(
