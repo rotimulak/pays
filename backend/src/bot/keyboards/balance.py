@@ -6,10 +6,10 @@ from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 
 def get_balance_keyboard(min_payment: Decimal = Decimal("200.00")) -> InlineKeyboardMarkup:
-    """Keyboard for M11 balance screen.
+    """Keyboard for M11 balance screen with promo code button.
 
     Layout:
-    [💳 Пополнить 200₽] [✏️ Другая сумма]
+    [💳 Пополнить 200₽] [✏️ Другая сумма] [🎟 Промокод]
     [📋 История] [🔄 Обновить]
     [◀️ Главное меню]
 
@@ -17,7 +17,7 @@ def get_balance_keyboard(min_payment: Decimal = Decimal("200.00")) -> InlineKeyb
         min_payment: Minimum payment amount from tariff
 
     Returns:
-        Inline keyboard with payment buttons
+        Inline keyboard with payment and promo buttons
     """
     min_amount = int(min_payment)
     return InlineKeyboardMarkup(
@@ -30,6 +30,10 @@ def get_balance_keyboard(min_payment: Decimal = Decimal("200.00")) -> InlineKeyb
                 InlineKeyboardButton(
                     text="✏️ Другая сумма",
                     callback_data="pay:custom",
+                ),
+                InlineKeyboardButton(
+                    text="🎟 Промокод",
+                    callback_data="promo_trial",
                 ),
             ],
             [
@@ -67,6 +71,15 @@ def get_payment_keyboard(amount: int, payment_url: str) -> InlineKeyboardMarkup:
 
 def get_cancel_keyboard() -> InlineKeyboardMarkup:
     """Keyboard with just cancel button (for FSM states)."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Отмена", callback_data="balance")],
+        ]
+    )
+
+
+def get_trial_promo_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard for trial promo code input."""
     return InlineKeyboardMarkup(
         inline_keyboard=[
             [InlineKeyboardButton(text="◀️ Отмена", callback_data="balance")],
