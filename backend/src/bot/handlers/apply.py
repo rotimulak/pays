@@ -70,9 +70,13 @@ async def _start_apply_flow(message: Message, state: FSMContext, session: AsyncS
     await apply_service.cancel(message.from_user.id)
 
     # Проверяем доступ до показа промпта
-    can_access, reason = await apply_service.check_access(message.from_user.id)
+    can_access, _ = await apply_service.check_access(message.from_user.id)
     if not can_access:
-        await message.answer(f"❌ {reason}\n\nИспользуйте /buy для пополнения.")
+        await message.answer(
+            "У вас не активирована подписка.\n\n"
+            "Воспользуйтесь пополнением баланса /balance\n\n"
+            "Если у вас есть промокод введите его /promo"
+        )
         return
 
     await state.set_state(ApplyStates.waiting_for_url)

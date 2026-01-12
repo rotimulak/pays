@@ -51,9 +51,13 @@ async def _start_cv_flow(message: Message, state: FSMContext, session: AsyncSess
     await cv_service.cancel(message.from_user.id)
 
     # Проверяем доступ до показа промпта
-    can_access, reason = await cv_service.check_access(message.from_user.id)
+    can_access, _ = await cv_service.check_access(message.from_user.id)
     if not can_access:
-        await message.answer(f"❌ {reason}\n\nИспользуйте /buy для пополнения.")
+        await message.answer(
+            "У вас не активирована подписка.\n\n"
+            "Воспользуйтесь пополнением баланса /balance\n\n"
+            "Если у вас есть промокод введите его /promo"
+        )
         return
 
     await state.set_state(CVStates.waiting_for_file)

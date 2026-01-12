@@ -91,9 +91,13 @@ async def cmd_skills(message: Message, state: FSMContext, session: AsyncSession)
     await skills_service.cancel(message.from_user.id)
 
     # Проверяем доступ до показа промпта
-    can_access, reason = await skills_service.check_access(message.from_user.id)
+    can_access, _ = await skills_service.check_access(message.from_user.id)
     if not can_access:
-        await message.answer(f"❌ {reason}\n\nИспользуйте /buy для пополнения.")
+        await message.answer(
+            "У вас не активирована подписка.\n\n"
+            "Воспользуйтесь пополнением баланса /balance\n\n"
+            "Если у вас есть промокод введите его /promo"
+        )
         return
 
     await state.set_state(SkillsStates.waiting_for_urls)
