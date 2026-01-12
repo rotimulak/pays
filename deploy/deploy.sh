@@ -23,7 +23,7 @@ fi
 
 echo "1. Installing dependencies..."
 apt-get update
-apt-get install -y docker.io docker-compose nginx certbot python3-certbot-nginx
+apt-get install -y docker.io docker-compose-v2 nginx certbot python3-certbot-nginx
 
 # Start and enable docker
 systemctl start docker
@@ -51,15 +51,17 @@ if [ ! -f .env ]; then
 fi
 
 echo "5. Building and starting containers..."
-docker-compose down || true
-docker-compose build --no-cache
-docker-compose up -d
+export BUILD_VERSION=$(git rev-parse --short HEAD)
+echo "Build version: $BUILD_VERSION"
+docker compose down || true
+docker compose build --no-cache
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 echo "6. Waiting for database..."
 sleep 5
 
 echo "7. Running migrations..."
-docker-compose exec -T api alembic upgrade head
+docker compose exec -T api alembic upgrade head
 
 echo "8. Setting up nginx..."
 cp ../deploy/nginx/hhhelper.conf /etc/nginx/sites-available/hhhelper
@@ -84,7 +86,7 @@ echo "  - API:  http://217.171.146.4 (после DNS: https://hhhelper.ru)"
 echo "  - Bot:  Running in polling mode"
 echo ""
 echo "Commands:"
-echo "  docker-compose logs -f        # View logs"
-echo "  docker-compose restart api    # Restart API"
-echo "  docker-compose restart bot    # Restart bot"
-echo "  docker-compose down           # Stop all"
+echo "  docker compose logs -f        # View logs"
+echo "  docker compose restart api    # Restart API"
+echo "  docker compose restart bot    # Restart bot"
+echo "  docker compose down           # Stop all"

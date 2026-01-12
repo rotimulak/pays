@@ -134,11 +134,12 @@ python -m alembic revision --autogenerate -m "description"
 
 ### Docker
 
-| Переменная | Default |
-|------------|---------|
-| `POSTGRES_USER` | postgres |
-| `POSTGRES_PASSWORD` | postgres |
-| `POSTGRES_DB` | telegram_billing |
+| Переменная | Default | Описание |
+|------------|---------|----------|
+| `POSTGRES_USER` | postgres | Пользователь PostgreSQL |
+| `POSTGRES_PASSWORD` | postgres | Пароль PostgreSQL |
+| `POSTGRES_DB` | telegram_billing | База данных |
+| `BUILD_VERSION` | dev | Версия билда (автоматически из git hash) |
 
 ### Логирование
 
@@ -192,6 +193,7 @@ certbot --nginx -d hhhelper.ru
 cd /opt/hhhelper
 git pull origin main
 cd backend
+export BUILD_VERSION=$(git rev-parse --short HEAD)
 docker compose build --no-cache
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
@@ -199,7 +201,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ### Quick Deploy (одной командой с локальной машины)
 
 ```bash
-ssh root@217.171.146.4 "cd /opt/hhhelper && git pull origin main && cd backend && docker compose build --no-cache && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
+ssh root@217.171.146.4 "cd /opt/hhhelper && git pull origin main && cd backend && export BUILD_VERSION=\$(git rev-parse --short HEAD) && docker compose build --no-cache && docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
 ```
 
 ### Автоматический деплой

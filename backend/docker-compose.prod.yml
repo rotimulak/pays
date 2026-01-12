@@ -41,6 +41,7 @@ services:
     environment:
       - LOG_FORMAT=json
       - LOG_LEVEL=INFO
+      - BUILD_VERSION=${BUILD_VERSION:-unknown}
 
   db:
     restart: always
