@@ -1,5 +1,6 @@
 """Start command handler."""
 
+import asyncio
 import os
 
 from aiogram import F, Router
@@ -58,6 +59,10 @@ async def cmd_start(message: Message, user: User) -> None:
         "• Проанализирую резюме и дам рекомендации\n"
         "• Подскажу, какие навыки добавить под рынок\n"
         "• Сгенерирую персональный отклик на вакансию\n\n"
+        "⚠️ <b>Важно понимать:</b>\n"
+        "❌ Мы НЕ предлагаем работу\n"
+        "❌ Мы НЕ автоматически правим ваше резюме\n"
+        "❌ Мы НЕ автоматически откликаемся и ведем переписку\n\n"
         "💡 <b>Рекомендуемый порядок:</b>\n"
         "CV → SKILLS → APPLY\n\n"
         "Сначала загрузи резюме, потом усиль его под рынок, а затем откликайся на вакансии.\n\n"
@@ -98,10 +103,13 @@ async def cmd_start(message: Message, user: User) -> None:
         "• Готовый текст для копирования в отклик"
     )
 
-    # Send all intro messages
+    # Send all intro messages with delays
     await message.answer(intro_1, parse_mode="HTML", disable_web_page_preview=True)
+    await asyncio.sleep(2)
     await message.answer(intro_2, parse_mode="HTML")
+    await asyncio.sleep(2)
     await message.answer(intro_3, parse_mode="HTML")
+    await asyncio.sleep(2)
     await message.answer(intro_4, parse_mode="HTML")
 
     # Send reply keyboard + inline buttons
