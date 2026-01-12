@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.callbacks.invoice import InvoiceCallback
 from src.bot.callbacks.tariff import TariffCallback
+from src.bot.keyboards.main_menu import get_main_menu_inline
 from src.bot.keyboards.payment import get_payment_keyboard
-from src.bot.keyboards.tariffs import get_tariffs_keyboard
 from src.core.exceptions import NotFoundError, ValidationError
 from src.db.models.user import User
 from src.services.invoice_service import InvoiceService
@@ -125,20 +125,13 @@ async def cancel_invoice_callback(
         # Cancel invoice
         await invoice_service.cancel_invoice(callback_data.invoice_id)
 
-        # Show tariffs again
-        tariffs = await tariff_service.get_active_tariffs()
-        text = "✅ Счёт отменён.\n\n"
+        # Show confirmation with balance button
+        text = "✅ Счёт отменён.\n\nВы можете пополнить баланс или вернуться в главное меню."
 
-        if tariffs:
-            text += tariff_service.format_tariffs_list(tariffs)
-            await message.edit_text(
-                text,
-                reply_markup=get_tariffs_keyboard(tariffs),
-            )
-        else:
-            await message.edit_text(
-                text + "Нет доступных тарифов.",
-            )
+        await message.edit_text(
+            text,
+            reply_markup=get_main_menu_inline(),
+        )
 
         logger.info(
             "Invoice cancelled: inv_id=%d, user=%d",

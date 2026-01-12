@@ -93,6 +93,6 @@ def get_payment_success_keyboard() -> InlineKeyboardMarkup:
     """Keyboard shown after successful payment."""
     builder = InlineKeyboardBuilder()
     builder.button(text="👤 Мой профиль", callback_data="show_profile")
-    builder.button(text="💰 Ещё тарифы", callback_data="show_tariffs")
+    builder.button(text="💰 Баланс", callback_data="balance")
     builder.adjust(2)
     return builder.as_markup()

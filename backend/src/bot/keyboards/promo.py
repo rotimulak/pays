@@ -69,8 +69,8 @@ def get_promo_result_keyboard(
         )
 
     builder.button(
-        text="↩️ Назад к тарифам",
-        callback_data="show_tariffs",
+        text="💰 Баланс",
+        callback_data="balance",
     )
 
     builder.adjust(1)
@@ -99,8 +99,8 @@ def get_tariff_with_promo_keyboard(tariff_id: UUID) -> InlineKeyboardMarkup:
     )
 
     builder.button(
-        text="↩️ Назад",
-        callback_data="show_tariffs",
+        text="💰 Баланс",
+        callback_data="balance",
     )
 
     builder.adjust(1)

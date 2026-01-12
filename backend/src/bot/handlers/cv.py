@@ -43,9 +43,8 @@ def _get_cv_service(session: AsyncSession, bot) -> CVService:
     )
 
 
-@router.message(Command("cv"))
-async def cmd_cv(message: Message, state: FSMContext, session: AsyncSession) -> None:
-    """Запуск команды анализа CV."""
+async def _start_cv_flow(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    """Общая логика запуска анализа CV."""
     cv_service = _get_cv_service(session, message.bot)
 
     # Отменяем предыдущий анализ
@@ -59,6 +58,18 @@ async def cmd_cv(message: Message, state: FSMContext, session: AsyncSession) -> 
 
     await state.set_state(CVStates.waiting_for_file)
     await message.answer(UPLOAD_PROMPT.format(cost=CV_ANALYSIS_COST))
+
+
+@router.message(Command("cv"))
+async def cmd_cv(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    """Запуск команды анализа CV."""
+    await _start_cv_flow(message, state, session)
+
+
+@router.message(F.text == "📄 Анализ резюме")
+async def btn_cv(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    """Обработка кнопки 'Анализ резюме'."""
+    await _start_cv_flow(message, state, session)
 
 
 @router.message(CVStates.waiting_for_file, F.document)
@@ -81,7 +92,7 @@ async def handle_cv_file(message: Message, state: FSMContext, session: AsyncSess
 
     # Переходим в состояние обработки
     await state.set_state(CVStates.processing)
-    await message.answer("🔄 Анализирую ваше резюме...")
+    await message.answer("🔄 Анализирую ваше резюме. Примерное время 2-3 минуты")
 
     # Запускаем анализ через сервис
     cv_service = _get_cv_service(session, message.bot)

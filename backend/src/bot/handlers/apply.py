@@ -62,9 +62,8 @@ def _get_apply_service(session: AsyncSession, bot) -> ApplyService:
     )
 
 
-@router.message(Command("apply"))
-async def cmd_apply(message: Message, state: FSMContext, session: AsyncSession) -> None:
-    """Запуск команды создания отклика на вакансию."""
+async def _start_apply_flow(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    """Общая логика запуска создания отклика."""
     apply_service = _get_apply_service(session, message.bot)
 
     # Отменяем предыдущий отклик
@@ -80,6 +79,18 @@ async def cmd_apply(message: Message, state: FSMContext, session: AsyncSession) 
     await message.answer(PROMPT.format(cost=APPLY_COST))
 
 
+@router.message(Command("apply"))
+async def cmd_apply(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    """Запуск команды создания отклика на вакансию."""
+    await _start_apply_flow(message, state, session)
+
+
+@router.message(F.text == "💼 Создать отклик")
+async def btn_apply(message: Message, state: FSMContext, session: AsyncSession) -> None:
+    """Обработка кнопки 'Создать отклик'."""
+    await _start_apply_flow(message, state, session)
+
+
 @router.message(ApplyStates.waiting_for_url, F.text)
 async def handle_vacancy_url(message: Message, state: FSMContext, session: AsyncSession) -> None:
     """Обработка URL вакансии."""
@@ -92,7 +103,7 @@ async def handle_vacancy_url(message: Message, state: FSMContext, session: Async
 
     # Переходим в состояние обработки
     await state.set_state(ApplyStates.processing)
-    await message.answer("🔄 Создаю отклик на вакансию...")
+    await message.answer("🔄 Создаю отклик на вакансию. Примерное время 1-2 минуты")
 
     # Запускаем создание отклика через сервис
     apply_service = _get_apply_service(session, message.bot)

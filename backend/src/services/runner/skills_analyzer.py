@@ -11,7 +11,7 @@ from .models import StreamMessage
 class SkillsAnalyzer:
     """Сервис анализа навыков на основе вакансий через Runner."""
 
-    ENDPOINT = "/api/vacancy/skills"
+    ENDPOINT = "/api/skills/analyze"
 
     def __init__(self, runner: BaseRunnerClient):
         self.runner = runner
@@ -23,7 +23,7 @@ class SkillsAnalyzer:
     ) -> AsyncIterator[StreamMessage]:
         """Запустить анализ навыков по списку вакансий.
 
-        1. POST /api/vacancy/skills -> получаем task_id и stream_url
+        1. POST /api/skills/analyze -> получаем task_id и stream_url
         2. GET stream_url -> SSE стрим результатов
 
         Args:
@@ -31,8 +31,8 @@ class SkillsAnalyzer:
             telegram_id: Telegram ID пользователя
         """
         form = aiohttp.FormData()
-        # Передаём список URL как JSON
-        form.add_field("vacancy_urls", ",".join(vacancy_urls))
+        # Передаём список URL каждый с новой строки (API ожидает vacancies_list)
+        form.add_field("vacancies_list", "\n".join(vacancy_urls))
         form.add_field("telegram_id", str(telegram_id))
 
         # Step 1: Create task

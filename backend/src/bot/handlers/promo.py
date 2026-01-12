@@ -9,13 +9,13 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.callbacks.promo import PromoCallback
+from src.bot.keyboards.main_menu import get_main_menu_inline
 from src.bot.keyboards.payment import get_payment_keyboard
 from src.bot.keyboards.promo import (
     get_promo_input_keyboard,
     get_promo_result_keyboard,
     get_tariff_with_promo_keyboard,
 )
-from src.bot.keyboards.tariffs import get_tariffs_keyboard
 from src.bot.states.promo import PromoStates
 from src.core.exceptions import NotFoundError, ValidationError
 from src.db.models.user import User
@@ -174,16 +174,9 @@ async def cancel_promo_input(
 
     await state.clear()
 
-    # Show tariffs list
-    tariff_service = TariffService(session)
-    tariffs = await tariff_service.get_active_tariffs()
-
-    if tariffs:
-        text = "Ввод промокода отменён.\n\n"
-        text += tariff_service.format_tariffs_list(tariffs)
-        await message.edit_text(text, reply_markup=get_tariffs_keyboard(tariffs))
-    else:
-        await message.edit_text("Ввод промокода отменён.")
+    # Show confirmation with main menu
+    text = "Ввод промокода отменён.\n\nВы можете пополнить баланс или вернуться в главное меню."
+    await message.edit_text(text, reply_markup=get_main_menu_inline())
 
     await callback.answer()
 

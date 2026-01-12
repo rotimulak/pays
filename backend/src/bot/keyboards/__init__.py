@@ -11,10 +11,8 @@ from src.bot.keyboards.promo import (
     get_promo_result_keyboard,
     get_tariff_with_promo_keyboard,
 )
-from src.bot.keyboards.tariffs import get_empty_tariffs_keyboard, get_tariffs_keyboard
 
 __all__ = [
-    "get_empty_tariffs_keyboard",
     "get_main_menu",
     "get_payment_keyboard",
     "get_payment_success_keyboard",
@@ -22,5 +20,4 @@ __all__ = [
     "get_promo_input_keyboard",
     "get_promo_result_keyboard",
     "get_tariff_with_promo_keyboard",
-    "get_tariffs_keyboard",
 ]

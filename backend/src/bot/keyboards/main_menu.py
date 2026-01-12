@@ -12,17 +12,18 @@ def get_main_menu() -> ReplyKeyboardMarkup:
     """Create main menu reply keyboard.
 
     Layout:
-    [💰 Баланс] [❓ Помощь]
-    [💪 Усилить резюме]
+    [📄 Анализ резюме] [💪 Усилить резюме]
+    [💼 Создать отклик] [💰 Баланс]
     """
     return ReplyKeyboardMarkup(
         keyboard=[
             [
-                KeyboardButton(text="💰 Баланс"),
-                KeyboardButton(text="❓ Помощь"),
+                KeyboardButton(text="📄 Анализ резюме"),
+                KeyboardButton(text="💪 Усилить резюме"),
             ],
             [
-                KeyboardButton(text="💪 Усилить резюме"),
+                KeyboardButton(text="💼 Создать отклик"),
+                KeyboardButton(text="💰 Баланс"),
             ],
         ],
         resize_keyboard=True,
