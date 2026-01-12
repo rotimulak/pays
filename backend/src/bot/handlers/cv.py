@@ -65,7 +65,7 @@ async def _start_cv_flow(message: Message, state: FSMContext, session: AsyncSess
         return
 
     await state.set_state(CVStates.waiting_for_file)
-    await message.answer(UPLOAD_PROMPT.format(cost=CV_ANALYSIS_COST))
+    await message.answer(UPLOAD_PROMPT.format(cost=CV_ANALYSIS_COST), parse_mode="HTML")
 
     # Отправляем инструкцию по скачиванию резюме
     photo = FSInputFile(ASSETS_DIR / "how-download-android.jpg")
