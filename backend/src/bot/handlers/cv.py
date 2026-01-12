@@ -1,9 +1,11 @@
 """CV analysis command handler."""
 
+from pathlib import Path
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Document, Message
+from aiogram.types import Document, FSInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.states.cv import CVStates
@@ -15,6 +17,8 @@ from src.services.token_service import TokenService
 logger = get_logger(__name__)
 
 router = Router(name="cv")
+
+ASSETS_DIR = Path(__file__).parent.parent / "assets"
 
 UPLOAD_PROMPT = """
 📄 <b>Анализ CV</b>
@@ -62,6 +66,10 @@ async def _start_cv_flow(message: Message, state: FSMContext, session: AsyncSess
 
     await state.set_state(CVStates.waiting_for_file)
     await message.answer(UPLOAD_PROMPT.format(cost=CV_ANALYSIS_COST))
+
+    # Отправляем инструкцию по скачиванию резюме
+    photo = FSInputFile(ASSETS_DIR / "how-download-android.jpg")
+    await message.answer_photo(photo)
 
 
 @router.message(Command("cv"))
