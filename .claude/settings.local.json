@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"C:\\Program Files\\PostgreSQL\\17\\bin\\psql.exe\" -U postgres -d telegram_billing -c \"INSERT INTO tariffs (id, slug, name, price, tokens, subscription_days, period_unit, period_value, subscription_fee, min_payment, is_active, sort_order) VALUES (gen_random_uuid(), ''trial-30-7'', ''Пробный тариф'', 0.00, 30, 0, ''day'', 8, 0, 0.00, false, 999) RETURNING id, slug, name;\")"
+      "Bash(mkdir:*)",
+      "Bash(docker ps:*)",
+      "Bash(curl:*)",
+      "Bash(ssh root@217.171.146.4:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(test:*)",
+      "Bash(dir /s \"d:\\Sources\\pays\\backend\\src\\services\\runner\" *.py)",
+      "Bash(python check_cv_transactions.py:*)",
+      "Bash(python check_cv_transactions_sql.py:*)"
     ],
     "deny": [],
     "ask": []
