@@ -5,7 +5,7 @@ from src.core.config import settings
 from .apply_analyzer import ApplyAnalyzer
 from .client import BaseRunnerClient, RunnerClient, TaskResponse
 from .cv_analyzer import CVAnalyzer
-from .models import BotOutput, BotOutputType, CVFile, FileValidationError, StreamMessage, TaskResult
+from .models import BotOutput, BotOutputType, CVFile, FileValidationError, StreamMessage, TaskResult, TrackCost
 from .skills_analyzer import SkillsAnalyzer
 
 __all__ = [
@@ -21,6 +21,7 @@ __all__ = [
     "StreamMessage",
     "BotOutput",
     "BotOutputType",
+    "TrackCost",
     "get_runner_client",
     "get_cv_analyzer",
     "get_apply_analyzer",

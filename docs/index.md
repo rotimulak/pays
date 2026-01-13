@@ -29,6 +29,10 @@
 | [Bot](./modules/bot.md) | M2 | Telegram-бот, handlers, keyboards |
 | [Tariffs](./modules/tariffs.md) | M3 | Тарифы и счета |
 | [Payments](./modules/payments.md) | M4 | Mock-провайдер, webhooks |
+| [Billing](./modules/billing.md) | M5 | Биллинг, транзакции, уведомления |
+| [Promo Codes](./modules/promo-codes.md) | M7 | Промокоды, скидки, бонусы |
+| [Track Cost Integration](./modules/track-cost-integration.md) | M8 | Динамический учет стоимости треков |
+| [Subscriptions](./modules/subscriptions.md) | M9 | Автопродление, уведомления об истечении |
 | [Docker & Deploy](./modules/docker.md) | M10 | Контейнеризация, health checks, logging |
 
 [📋 Все модули](./modules/index.md)

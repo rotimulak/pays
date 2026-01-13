@@ -213,6 +213,15 @@ class RunnerClient(BaseRunnerClient):
                                         )
                                         continue
 
+                                    # Обработка track_cost события
+                                    if msg_type == "track_cost":
+                                        yield StreamMessage(
+                                            type="track_cost",
+                                            content="",
+                                            track_cost_data=msg,
+                                        )
+                                        continue
+
                                     # Передаём task_id в complete/done сообщениях
                                     yield StreamMessage(
                                         type=msg_type,

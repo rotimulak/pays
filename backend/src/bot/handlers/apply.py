@@ -20,11 +20,9 @@ router = Router(name="apply")
 PROMPT = """
 💼 <b>Отклик на вакансию</b>
 
-Отправьте ссылку на вакансию с hh.ru.
+⚠️ <b>Внимание!</b> Сначала загрузите резюме командой /cv
 
-⚠️ Требования:
-• У вас должно быть загружено резюме (команда /cv)
-• Ссылка должна быть с hh.ru
+После загрузки резюме отправьте ссылку на вакансию с hh.ru.
 
 💰 Стоимость: <b>{cost} токен</b>
 """.strip()
@@ -76,7 +74,7 @@ async def _start_apply_flow(message: Message, state: FSMContext, session: AsyncS
         return
 
     await state.set_state(ApplyStates.waiting_for_url)
-    await message.answer(PROMPT.format(cost=APPLY_COST))
+    await message.answer(PROMPT.format(cost=APPLY_COST), parse_mode="HTML")
 
 
 @router.message(Command("apply"))

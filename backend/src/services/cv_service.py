@@ -17,9 +17,6 @@ from src.services.token_service import TokenService
 
 logger = get_logger(__name__)
 
-# Стоимость анализа CV в токенах
-CV_ANALYSIS_COST = 1
-
 # Лимит длины сообщения Telegram
 MAX_MESSAGE_LENGTH = 4096
 
@@ -34,7 +31,7 @@ class CVAnalysisResult:
 
     success: bool
     error: str | None = None
-    tokens_spent: int = 0
+    tokens_spent: float = 0.0
 
 
 class CVService:
@@ -56,6 +53,7 @@ class CVService:
         self.token_service = token_service
         self.cv_analyzer = cv_analyzer
         self.bot = bot
+        self._track_cost: float | None = None  # Стоимость текущего трека
 
     async def check_access(self, user_id: int) -> tuple[bool, str | None]:
         """Проверить доступ пользователя к анализу CV.
@@ -63,7 +61,9 @@ class CVService:
         Returns:
             (can_access, error_message)
         """
-        return await self.token_service.can_spend(user_id, CV_ANALYSIS_COST)
+        # Проверяем только подписку и блокировку, не баланс
+        balance = await self.token_service.check_balance(user_id)
+        return balance.can_spend, balance.reason
 
     async def analyze_cv(
         self,
@@ -115,17 +115,51 @@ class CVService:
 
         # 3. Списание токенов при успехе
         if success:
+            # Списываем фактическую стоимость из track_cost
+            if self._track_cost is None:
+                logger.warning("Track completed without cost data")
+                self._track_cost = 0.0
+
+            # Применяем мультипликатор
+            from src.core.config import settings
+            final_cost = self._track_cost * settings.cost_multiplier
+
+            # Округляем до 2 знаков
+            final_cost = round(final_cost, 2)
+
+            logger.info(
+                f"Charging user: raw_cost={self._track_cost}, "
+                f"multiplier={settings.cost_multiplier}, final_cost={final_cost}"
+            )
+
             try:
                 await self.token_service.spend_tokens(
                     user_id=user_id,
-                    amount=CV_ANALYSIS_COST,
+                    amount=final_cost,
                     description="Анализ CV",
-                    metadata={"task_id": task_id},
+                    metadata={
+                        "task_id": task_id,
+                        "cost_raw": self._track_cost,
+                        "cost_multiplier": settings.cost_multiplier,
+                        "cost_final": final_cost,
+                    },
                 )
-                return CVAnalysisResult(success=True, tokens_spent=CV_ANALYSIS_COST)
-            except (InsufficientBalanceError, SubscriptionExpiredError) as e:
-                # Race condition: баланс изменился во время анализа
+
+                # Отправить сообщение пользователю о списании
+                if final_cost > 0:
+                    await self.bot.send_message(
+                        chat_id,
+                        f"Потрачено {final_cost} токенов"
+                    )
+
+                # Сбросить стоимость для следующего запуска
+                self._track_cost = None
+
+                return CVAnalysisResult(success=True, tokens_spent=final_cost)
+            except Exception as e:
+                # Разрешаем минус, логируем ошибку
                 logger.warning(f"Billing failed after analysis: {e}")
+                self._track_cost = None
                 return CVAnalysisResult(
                     success=True,
                     tokens_spent=0,
@@ -150,6 +184,13 @@ class CVService:
         if message.type == "error":
             await self.bot.send_message(chat_id, f"❌ {message.content}")
             return "error"
+
+        if message.type == "track_cost":
+            cost_data = message.as_track_cost()
+            if cost_data:
+                self._track_cost = cost_data.total_cost
+                logger.info(f"Track cost received: {cost_data.total_cost} {cost_data.currency}")
+            return "continue"
 
         if message.type in ("done", "complete"):
             return "complete"

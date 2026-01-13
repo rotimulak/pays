@@ -12,7 +12,7 @@ class TokenBalanceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     user_id: int
-    token_balance: int = Field(..., ge=0)
+    token_balance: float
     subscription_active: bool
     subscription_end: datetime | None
     can_spend: bool
@@ -22,7 +22,7 @@ class TokenBalanceResponse(BaseModel):
 class SpendTokensRequest(BaseModel):
     """Request to spend tokens."""
 
-    amount: int = Field(..., gt=0, le=10000, description="Amount to spend")
+    amount: float = Field(..., gt=0, le=10000, description="Amount to spend")
     description: str = Field(..., min_length=1, max_length=500)
     idempotency_key: str | None = Field(
         None,
@@ -38,9 +38,9 @@ class SpendTokensResponse(BaseModel):
 
     success: bool = True
     transaction_id: UUID
-    tokens_spent: int
-    balance_before: int
-    balance_after: int
+    tokens_spent: float
+    balance_before: float
+    balance_after: float
 
 
 class ErrorResponse(BaseModel):

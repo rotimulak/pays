@@ -68,7 +68,7 @@ class UserRepository:
     async def update_balance(
         self,
         user_id: int,
-        delta: int,
+        delta: float,
         expected_version: int,
     ) -> User:
         """Update token balance with optimistic locking.

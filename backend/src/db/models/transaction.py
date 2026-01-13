@@ -4,7 +4,7 @@ from datetime import datetime
 
 from typing import Any
 
-from sqlalchemy import BigInteger, Enum, ForeignKey, Index, Integer, Text
+from sqlalchemy import BigInteger, Enum, Float, ForeignKey, Index, Integer, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -48,13 +48,13 @@ class Transaction(Base):
         nullable=False,
         comment="Transaction type",
     )
-    tokens_delta: Mapped[int] = mapped_column(
-        Integer,
+    tokens_delta: Mapped[float] = mapped_column(
+        Float,
         nullable=False,
         comment="Token change (positive or negative)",
     )
-    balance_after: Mapped[int] = mapped_column(
-        Integer,
+    balance_after: Mapped[float] = mapped_column(
+        Float,
         nullable=False,
         comment="Token balance after transaction",
     )
@@ -99,5 +99,5 @@ class Transaction(Base):
     def __repr__(self) -> str:
         return (
             f"Transaction(id={self.id}, type={self.type.value}, "
-            f"delta={self.tokens_delta:+d})"
+            f"delta={self.tokens_delta:+.2f})"
         )

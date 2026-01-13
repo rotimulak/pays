@@ -4,6 +4,20 @@ from dataclasses import dataclass
 from enum import Enum
 
 
+@dataclass
+class TrackCost:
+    """Track cost data from Runner Framework."""
+
+    total_cost: float
+    currency: str
+    api_calls: int
+    total_tokens: int
+    prompt_tokens: int | None = None
+    completion_tokens: int | None = None
+    free_requests: int = 0
+    node_costs: dict[str, float] | None = None
+
+
 class BotOutputType(str, Enum):
     """Тип bot_output от Runner."""
 
@@ -49,7 +63,7 @@ class BotOutput:
 class StreamMessage:
     """Сообщение из SSE стрима Runner."""
 
-    type: str  # progress | result | error | done | complete | cancelled | bot_output
+    type: str  # progress | result | error | done | complete | cancelled | bot_output | track_cost
     content: str
     metadata: dict | None = None
     task_id: str | None = None  # task_id для получения результата
@@ -57,6 +71,8 @@ class StreamMessage:
     output_type: str | None = None  # "text" | "file"
     filename: str | None = None
     caption: str | None = None
+    # Для track_cost — raw data
+    track_cost_data: dict | None = None
 
     def as_bot_output(self) -> BotOutput | None:
         """Parse as BotOutput if applicable."""
@@ -70,6 +86,24 @@ class StreamMessage:
                 caption=self.caption,
             )
         except ValueError:
+            return None
+
+    def as_track_cost(self) -> TrackCost | None:
+        """Parse as TrackCost if applicable."""
+        if self.type != "track_cost" or not self.track_cost_data:
+            return None
+        try:
+            return TrackCost(
+                total_cost=self.track_cost_data["total_cost"],
+                currency=self.track_cost_data.get("currency", "RUB"),
+                api_calls=self.track_cost_data.get("api_calls", 0),
+                total_tokens=self.track_cost_data.get("total_tokens", 0),
+                prompt_tokens=self.track_cost_data.get("prompt_tokens"),
+                completion_tokens=self.track_cost_data.get("completion_tokens"),
+                free_requests=self.track_cost_data.get("free_requests", 0),
+                node_costs=self.track_cost_data.get("node_costs"),
+            )
+        except (KeyError, TypeError):
             return None
 
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import BigInteger, Boolean, CheckConstraint, Integer, String
+from sqlalchemy import BigInteger, Boolean, CheckConstraint, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.session import Base
@@ -36,9 +36,9 @@ class User(Base):
         nullable=True,
         comment="User last name",
     )
-    token_balance: Mapped[int] = mapped_column(
-        Integer,
-        default=0,
+    token_balance: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
         nullable=False,
         comment="Token balance",
     )
@@ -99,7 +99,7 @@ class User(Base):
     )
 
     __table_args__ = (
-        CheckConstraint("token_balance >= 0", name="token_balance_non_negative"),
+        CheckConstraint("token_balance >= -1000.0", name="token_balance_limit"),
     )
 
     def __repr__(self) -> str:

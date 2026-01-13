@@ -110,7 +110,7 @@ async def handle_cv_file(message: Message, state: FSMContext, session: AsyncSess
 
     # Переходим в состояние обработки
     await state.set_state(CVStates.processing)
-    await message.answer("🔄 Анализирую ваше резюме. Примерное время 2-3 минуты")
+    await message.answer("🔄 Анализирую ваше резюме")
 
     # Запускаем анализ через сервис
     cv_service = _get_cv_service(session, message.bot)

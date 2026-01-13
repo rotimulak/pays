@@ -141,5 +141,11 @@ class Settings(BaseSettings):
         description="API key for Runner authentication",
     )
 
+    # Token spending
+    cost_multiplier: float = Field(
+        default=3.14,
+        description="Multiplier for track execution costs",
+    )
+
 
 settings = Settings()

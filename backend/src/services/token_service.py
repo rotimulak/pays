@@ -39,9 +39,9 @@ class SpendResult:
     """Result of token spending."""
 
     transaction_id: UUID
-    tokens_spent: int
-    balance_before: int
-    balance_after: int
+    tokens_spent: float
+    balance_before: float
+    balance_after: float
     user_id: int
 
 
@@ -83,9 +83,9 @@ class TokenService:
         elif not subscription_active:
             can_spend = False
             reason = "Subscription expired"
-        elif user.token_balance <= 0:
+        elif user.token_balance < 0:  # Изменено: запрещаем только при отрицательном
             can_spend = False
-            reason = "Insufficient balance"
+            reason = "Insufficient balance (negative)"
 
         return TokenBalance(
             user_id=user.id,
@@ -96,7 +96,7 @@ class TokenService:
             reason=reason,
         )
 
-    async def can_spend(self, user_id: int, amount: int) -> tuple[bool, str | None]:
+    async def can_spend(self, user_id: int, amount: float) -> tuple[bool, str | None]:
         """Check if user can spend specified amount.
 
         Args:
@@ -119,7 +119,7 @@ class TokenService:
     async def spend_tokens(
         self,
         user_id: int,
-        amount: int,
+        amount: float,
         description: str,
         metadata: dict | None = None,
     ) -> SpendResult:
@@ -163,12 +163,14 @@ class TokenService:
                 else "No subscription"
             )
 
-        # Check balance
+        # Check balance - разрешаем уход в минус, но логируем
         if user.token_balance < amount:
-            raise InsufficientBalanceError(
-                required=amount,
-                available=user.token_balance,
+            logger.warning(
+                f"User {user_id} balance will go negative: "
+                f"current={user.token_balance}, spend={amount}, "
+                f"result={user.token_balance - amount}"
             )
+            # НЕ выбрасываем исключение - продолжаем списание
 
         balance_before = user.token_balance
         new_balance = balance_before - amount

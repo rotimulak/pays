@@ -188,9 +188,9 @@ class BillingService:
     async def _credit_tokens(
         self,
         user_id: int,
-        amount: int,
+        amount: float,
         invoice_id: UUID,
-    ) -> int:
+    ) -> float:
         """Credit tokens to user balance.
 
         Uses optimistic locking via balance_version to prevent
