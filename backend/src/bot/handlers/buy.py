@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.callbacks.invoice import InvoiceCallback
 from src.bot.callbacks.tariff import TariffCallback
-from src.bot.keyboards.main_menu import get_main_menu_inline
+from src.bot.keyboards.main_menu import get_start_menu_inline
 from src.bot.keyboards.payment import get_payment_keyboard
 from src.core.exceptions import NotFoundError, ValidationError
 from src.db.models.user import User
@@ -130,7 +130,7 @@ async def cancel_invoice_callback(
 
         await message.edit_text(
             text,
-            reply_markup=get_main_menu_inline(),
+            reply_markup=get_start_menu_inline(),
         )
 
         logger.info(

@@ -101,7 +101,7 @@ async def handle_vacancy_url(message: Message, state: FSMContext, session: Async
 
     # Переходим в состояние обработки
     await state.set_state(ApplyStates.processing)
-    await message.answer("🔄 Создаю отклик на вакансию. Примерное время 1-2 минуты")
+    await message.answer("🔄 Создаю отклик на вакансию")
 
     # Запускаем создание отклика через сервис
     apply_service = _get_apply_service(session, message.bot)

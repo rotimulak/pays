@@ -127,6 +127,10 @@ async def handle_cv_file(message: Message, state: FSMContext, session: AsyncSess
         else:
             await message.answer("✅ Анализ завершён!")
 
+        # Показываем предупреждение если было списание с ошибкой
+        if analysis_result.error:
+            await message.answer(f"⚠️ {analysis_result.error}")
+
     await state.clear()
 
 

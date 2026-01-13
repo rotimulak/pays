@@ -130,14 +130,13 @@ async def cmd_balance(
 
 
 @router.callback_query(F.data == "balance")
-@router.callback_query(F.data == "refresh_balance")
 async def on_balance_callback(
     callback: CallbackQuery,
     user: User,
     session: AsyncSession,
     state: FSMContext,
 ) -> None:
-    """Show/refresh balance screen (callback)."""
+    """Show balance screen (callback)."""
     # Clear any FSM state when returning to balance
     await state.clear()
 
@@ -148,7 +147,7 @@ async def on_balance_callback(
     try:
         text, min_payment = await _get_balance_text(user, session)
         await callback.message.edit_text(text, reply_markup=get_balance_keyboard(min_payment))
-        await callback.answer("Обновлено" if callback.data == "refresh_balance" else None)
+        await callback.answer()
     except Exception:
         # Message not modified (same content) or other error
         # Always answer callback to prevent "loading" state on button

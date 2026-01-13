@@ -9,7 +9,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.callbacks.promo import PromoCallback
-from src.bot.keyboards.main_menu import get_main_menu_inline
+from src.bot.keyboards.main_menu import get_start_menu_inline
 from src.bot.keyboards.payment import get_payment_keyboard
 from src.bot.keyboards.promo import (
     get_promo_input_keyboard,
@@ -176,7 +176,7 @@ async def cancel_promo_input(
 
     # Show confirmation with main menu
     text = "Ввод промокода отменён.\n\nВы можете пополнить баланс или вернуться в главное меню."
-    await message.edit_text(text, reply_markup=get_main_menu_inline())
+    await message.edit_text(text, reply_markup=get_start_menu_inline())
 
     await callback.answer()
 

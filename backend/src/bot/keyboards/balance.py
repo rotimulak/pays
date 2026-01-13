@@ -9,8 +9,8 @@ def get_balance_keyboard(min_payment: Decimal = Decimal("200.00")) -> InlineKeyb
     """Keyboard for M11 balance screen with promo code button.
 
     Layout:
-    [💳 Пополнить 200₽] [✏️ Другая сумма] [🎟 Промокод]
-    [📋 История] [🔄 Обновить]
+    [💳 Пополнить 200₽] [✏️ Другая сумма]
+    [🎟 Промокод] [📋 История]
     [◀️ Главное меню]
 
     Args:
@@ -31,14 +31,10 @@ def get_balance_keyboard(min_payment: Decimal = Decimal("200.00")) -> InlineKeyb
                     text="✏️ Другая сумма",
                     callback_data="pay:custom",
                 ),
-                InlineKeyboardButton(
-                    text="🎟 Промокод",
-                    callback_data="promo_trial",
-                ),
             ],
             [
+                InlineKeyboardButton(text="🎟 Промокод", callback_data="promo_trial"),
                 InlineKeyboardButton(text="📋 История", callback_data="show_history"),
-                InlineKeyboardButton(text="🔄 Обновить", callback_data="refresh_balance"),
             ],
             [
                 InlineKeyboardButton(text="◀️ Главное меню", callback_data="main_menu"),

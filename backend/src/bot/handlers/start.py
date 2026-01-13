@@ -126,7 +126,7 @@ async def on_main_menu(callback: CallbackQuery) -> None:
 
     try:
         text = "Главное меню\n\nВыбери действие:"
-        await callback.message.edit_text(text, reply_markup=get_main_menu_inline())
+        await callback.message.edit_text(text, reply_markup=get_start_menu_inline())
         await callback.answer()
     except Exception:
         await callback.answer()

@@ -147,13 +147,6 @@ class ApplyService:
                     },
                 )
 
-                # Отправить сообщение пользователю о списании
-                if final_cost > 0:
-                    await self.bot.send_message(
-                        chat_id,
-                        f"Потрачено {final_cost} токенов"
-                    )
-
                 # Сбросить стоимость для следующего запуска
                 self._track_cost = None
 
