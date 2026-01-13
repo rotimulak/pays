@@ -68,8 +68,14 @@ async def _start_cv_flow(message: Message, state: FSMContext, session: AsyncSess
     await message.answer(UPLOAD_PROMPT.format(cost=CV_ANALYSIS_COST), parse_mode="HTML")
 
     # Отправляем инструкцию по скачиванию резюме
-    photo = FSInputFile(ASSETS_DIR / "how-download-android.jpg")
-    await message.answer_photo(photo)
+    try:
+        photo = FSInputFile(ASSETS_DIR / "how-download-android.jpg")
+        await message.answer_photo(
+            photo,
+            caption="📱 Как скачать резюме с hh.ru на Android"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send instruction image: {e}", exc_info=True)
 
 
 @router.message(Command("cv"))
