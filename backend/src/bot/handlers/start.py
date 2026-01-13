@@ -16,9 +16,7 @@ from src.bot.states.skills import SkillsStates
 from src.bot.states.apply import ApplyStates
 from src.core.config import settings
 from src.db.models.user import User
-from src.services.cv_service import CV_ANALYSIS_COST
 from src.services.skills_service import SKILLS_COST
-from src.services.apply_service import APPLY_COST
 from src.services.token_service import TokenService
 
 router = Router(name="start")
@@ -143,10 +141,10 @@ async def on_cmd_cv(
 ) -> None:
     """Handle CV button - start CV analysis flow."""
     token_service = TokenService(session)
-    can_spend, reason = await token_service.can_spend(user.id, CV_ANALYSIS_COST)
+    balance = await token_service.check_balance(user.id)
 
-    if not can_spend:
-        await callback.answer(f"❌ {reason}", show_alert=True)
+    if not balance.can_spend:
+        await callback.answer(f"❌ {balance.reason}", show_alert=True)
         return
 
     await state.set_state(CVStates.waiting_for_file)
@@ -156,7 +154,7 @@ async def on_cmd_cv(
             f"📄 <b>Анализ CV</b>\n\n"
             f"Загрузите ваше резюме в формате <b>PDF</b> или <b>TXT</b>.\n\n"
             f"⚠️ Максимальный размер файла: <b>1 МБ</b>\n"
-            f"💰 Стоимость: <b>{CV_ANALYSIS_COST} токен</b>\n\n"
+            f"💰 Стоимость списывается автоматически после выполнения\n\n"
             f"Отправьте файл прямо в этот чат."
         )
 
@@ -197,10 +195,10 @@ async def on_cmd_apply(
 ) -> None:
     """Handle Apply button - start apply flow."""
     token_service = TokenService(session)
-    can_spend, reason = await token_service.can_spend(user.id, APPLY_COST)
+    balance = await token_service.check_balance(user.id)
 
-    if not can_spend:
-        await callback.answer(f"❌ {reason}", show_alert=True)
+    if not balance.can_spend:
+        await callback.answer(f"❌ {balance.reason}", show_alert=True)
         return
 
     await state.set_state(ApplyStates.waiting_for_url)
@@ -212,5 +210,5 @@ async def on_cmd_apply(
             f"⚠️ Требования:\n"
             f"• У вас должно быть загружено резюме (команда /cv)\n"
             f"• Ссылка должна быть с hh.ru\n\n"
-            f"💰 Стоимость: <b>{APPLY_COST} токен</b>"
+            f"💰 Стоимость списывается автоматически после выполнения"
         )

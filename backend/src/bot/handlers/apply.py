@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.states.apply import ApplyStates
 from src.core.logging import get_logger
-from src.services.apply_service import APPLY_COST, ApplyService
+from src.services.apply_service import ApplyService
 from src.services.runner import ApplyAnalyzer, get_runner_client
 from src.services.token_service import TokenService
 
@@ -24,7 +24,7 @@ PROMPT = """
 
 После загрузки резюме отправьте ссылку на вакансию с hh.ru.
 
-💰 Стоимость: <b>{cost} токен</b>
+💰 Стоимость списывается автоматически после выполнения
 """.strip()
 
 ERROR_NO_CV = """
@@ -74,7 +74,7 @@ async def _start_apply_flow(message: Message, state: FSMContext, session: AsyncS
         return
 
     await state.set_state(ApplyStates.waiting_for_url)
-    await message.answer(PROMPT.format(cost=APPLY_COST), parse_mode="HTML")
+    await message.answer(PROMPT, parse_mode="HTML")
 
 
 @router.message(Command("apply"))
@@ -136,5 +136,5 @@ async def handle_vacancy_url(message: Message, state: FSMContext, session: Async
 async def handle_invalid_input(message: Message) -> None:
     """Обработка невалидного ввода (не текст)."""
     await message.answer(
-        f"❌ Пожалуйста, отправьте ссылку на вакансию текстом.\n\n{PROMPT.format(cost=APPLY_COST)}"
+        f"❌ Пожалуйста, отправьте ссылку на вакансию текстом.\n\n{PROMPT}"
     )

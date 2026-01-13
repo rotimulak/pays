@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.bot.states.cv import CVStates
 from src.core.logging import get_logger
-from src.services.cv_service import CV_ANALYSIS_COST, CVService
+from src.services.cv_service import CVService
 from src.services.runner import CVFile, FileValidationError, get_cv_analyzer
 from src.services.token_service import TokenService
 
@@ -26,7 +26,7 @@ UPLOAD_PROMPT = """
 Загрузите ваше резюме в формате <b>PDF</b> или <b>TXT</b>.
 
 ⚠️ Максимальный размер файла: <b>1 МБ</b>
-💰 Стоимость: <b>{cost} токен</b>
+💰 Стоимость списывается автоматически после выполнения
 
 Отправьте файл прямо в этот чат.
 """.strip()
@@ -65,7 +65,7 @@ async def _start_cv_flow(message: Message, state: FSMContext, session: AsyncSess
         return
 
     await state.set_state(CVStates.waiting_for_file)
-    await message.answer(UPLOAD_PROMPT.format(cost=CV_ANALYSIS_COST), parse_mode="HTML")
+    await message.answer(UPLOAD_PROMPT, parse_mode="HTML")
 
     # Отправляем инструкцию по скачиванию резюме
     try:
@@ -134,5 +134,5 @@ async def handle_cv_file(message: Message, state: FSMContext, session: AsyncSess
 async def handle_invalid_input(message: Message) -> None:
     """Обработка невалидного ввода (текст вместо файла)."""
     await message.answer(
-        f"❌ Пожалуйста, отправьте файл, а не текст.\n\n{UPLOAD_PROMPT.format(cost=CV_ANALYSIS_COST)}"
+        f"❌ Пожалуйста, отправьте файл, а не текст.\n\n{UPLOAD_PROMPT}"
     )
