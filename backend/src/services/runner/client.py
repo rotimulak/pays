@@ -210,6 +210,7 @@ class RunnerClient(BaseRunnerClient):
                                             output_type=msg.get("output_type"),
                                             filename=msg.get("filename"),
                                             caption=msg.get("caption"),
+                                            metadata=msg,  # Сохраняем весь JSON для доступа к track_cost полям
                                         )
                                         continue
 

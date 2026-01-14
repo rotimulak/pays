@@ -204,6 +204,14 @@ class CVService:
             return "continue"
 
         if message.type == "bot_output":
+            # Проверяем track_cost, который приходит как bot_output с output_type="track_cost"
+            if message.output_type == "track_cost" and message.metadata:
+                self._track_cost = message.metadata.get("total_cost")
+                if self._track_cost:
+                    currency = message.metadata.get("currency", "RUB")
+                    logger.info(f"Track cost received (via bot_output): {self._track_cost} {currency}")
+                return "continue"
+
             await self._handle_bot_output(message, chat_id)
             return "continue"
 
