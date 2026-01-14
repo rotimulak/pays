@@ -11,7 +11,8 @@
       "Bash(test:*)",
       "Bash(dir /s \"d:\\Sources\\pays\\backend\\src\\services\\runner\" *.py)",
       "Bash(python check_cv_transactions.py:*)",
-      "Bash(python check_cv_transactions_sql.py:*)"
+      "Bash(python check_cv_transactions_sql.py:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": []

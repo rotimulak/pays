@@ -17,6 +17,9 @@ from src.services.token_service import TokenService
 
 logger = get_logger(__name__)
 
+# Стоимость анализа CV в токенах (fallback если Runner не отправил track_cost)
+CV_ANALYSIS_FALLBACK_COST = 1
+
 # Лимит длины сообщения Telegram
 MAX_MESSAGE_LENGTH = 4096
 
@@ -115,21 +118,29 @@ class CVService:
 
         # 3. Списание токенов при успехе
         if success:
-            # Списываем фактическую стоимость из track_cost
-            if self._track_cost is None:
-                logger.warning("Track completed without cost data")
-                self._track_cost = 0.0
-
-            # Применяем мультипликатор
             from src.core.config import settings
-            final_cost = self._track_cost * settings.cost_multiplier
+
+            # Списываем фактическую стоимость из track_cost
+            # Fallback на фиксированную стоимость, если Runner не отправил track_cost
+            if self._track_cost is None:
+                logger.warning(
+                    f"Track completed without cost data, using fallback cost: {CV_ANALYSIS_FALLBACK_COST}"
+                )
+                self._track_cost = CV_ANALYSIS_FALLBACK_COST
+                # Для fallback не применяем multiplier, используем прямое значение
+                final_cost = float(CV_ANALYSIS_FALLBACK_COST)
+                multiplier_used = 1.0
+            else:
+                # Применяем мультипликатор для динамической стоимости от Runner
+                final_cost = self._track_cost * settings.cost_multiplier
+                multiplier_used = settings.cost_multiplier
 
             # Округляем до 2 знаков
             final_cost = round(final_cost, 2)
 
             logger.info(
                 f"Charging user: raw_cost={self._track_cost}, "
-                f"multiplier={settings.cost_multiplier}, final_cost={final_cost}"
+                f"multiplier={multiplier_used}, final_cost={final_cost}"
             )
 
             try:
