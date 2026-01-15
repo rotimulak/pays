@@ -30,7 +30,7 @@ BALANCE_ACTIVE_TEMPLATE = """
 🆔 ID: <code>{user_id}</code>
 👤 Username: {username}
 
-💳 Баланс: <b>{balance}</b> токенов
+💳 Баланс: <b>{balance}</b> токенов (~{generations} генераций)
 📅 Подписка активна до: <b>{subscription_end}</b>
 
 ━━━━━━━━━━━━━━━━━━━━━
@@ -45,7 +45,7 @@ BALANCE_INACTIVE_TEMPLATE = """
 🆔 ID: <code>{user_id}</code>
 👤 Username: {username}
 
-💳 Баланс: <b>{balance}</b> токенов
+💳 Баланс: <b>{balance}</b> токенов (~{generations} генераций)
 ⚠️ Подписка неактивна
 
 ━━━━━━━━━━━━━━━━━━━━━
@@ -93,11 +93,16 @@ async def _get_balance_text(user: User, session: AsyncSession) -> tuple[str, Dec
     is_active = user.subscription_end is not None and user.subscription_end > now
     username_display = f"@{user.username}" if user.username else "не указан"
 
+    # Round token balance to 2 decimal places and calculate generations
+    balance_rounded = round(float(user.token_balance), 2)
+    generations = int(balance_rounded / 2)
+
     if is_active:
         text = BALANCE_ACTIVE_TEMPLATE.format(
             user_id=user.id,
             username=username_display,
-            balance=user.token_balance,
+            balance=balance_rounded,
+            generations=generations,
             subscription_end=user.subscription_end.strftime("%d.%m.%Y"),
             subscription_fee=subscription_fee,
             min_payment=int(min_payment),
@@ -106,7 +111,8 @@ async def _get_balance_text(user: User, session: AsyncSession) -> tuple[str, Dec
         text = BALANCE_INACTIVE_TEMPLATE.format(
             user_id=user.id,
             username=username_display,
-            balance=user.token_balance,
+            balance=balance_rounded,
+            generations=generations,
             subscription_fee=subscription_fee,
             min_payment=int(min_payment),
         )

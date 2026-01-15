@@ -6,7 +6,7 @@ from aiogram import Bot
 from aiogram.types import BotCommand
 
 from src.bot import create_bot, create_dispatcher
-from src.bot.handlers import apply, balance, buy, cv, healthcheck, help, skills, start, trial
+from src.bot.handlers import apply, balance, buy, constructor, cv, healthcheck, help, skills, start, trial
 from src.bot.middlewares import AuthMiddleware, CancelRunnerMiddleware, DbSessionMiddleware
 from src.core.config import settings
 from src.core.logging import get_logger, setup_logging
@@ -64,6 +64,7 @@ async def main() -> None:
     dp.include_router(cv.router)
     dp.include_router(apply.router)
     dp.include_router(skills.router)
+    dp.include_router(constructor.router)
 
     # Register hooks
     dp.startup.register(on_startup)

@@ -133,8 +133,9 @@ class TransactionService:
         }
         return mapping.get(type, str(type.value))
 
-    def _format_delta(self, delta: int) -> str:
+    def _format_delta(self, delta: float) -> str:
         """Format delta with sign."""
+        delta_rounded = round(delta, 2)
         if delta > 0:
-            return f"+{delta}"
-        return str(delta)
+            return f"+{delta_rounded}"
+        return str(delta_rounded)

@@ -31,7 +31,7 @@ SUCCESS_TEMPLATE = """
 • {tokens} токенов
 • Подписка до {subscription_end}
 
-💳 Ваш баланс: {balance} токенов
+💳 Ваш баланс: {balance} токенов (~{generations} генераций)
 """
 
 
@@ -74,10 +74,13 @@ async def on_promo_code_input(
         await state.clear()
 
         # Show success message
+        balance_rounded = round(float(result["new_balance"]), 2)
+        generations = int(balance_rounded / 2)
         text = SUCCESS_TEMPLATE.format(
             tokens=result["tokens_credited"],
             subscription_end=result["subscription_end"].strftime("%d.%m.%Y"),
-            balance=result["new_balance"],
+            balance=balance_rounded,
+            generations=generations,
         )
 
         # Get updated keyboard

@@ -123,9 +123,10 @@ def format_history_message(
     lines = ["История транзакций\n"]
 
     for tx in transactions:
+        balance_rounded = round(tx.balance_after, 2)
         lines.append(
             f"{tx.type_display}\n"
-            f"  {tx.tokens_delta_display} токенов -> {tx.balance_after}\n"
+            f"  {tx.tokens_delta_display} токенов -> {balance_rounded}\n"
             f"  {tx.created_at_display}\n"
         )
 

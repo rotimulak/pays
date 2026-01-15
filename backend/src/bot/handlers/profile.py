@@ -19,11 +19,16 @@ async def cmd_profile(message: Message, user: User, user_service: UserService) -
         return
 
     username_display = f"@{profile.username}" if profile.username else "не указан"
+
+    # Round token balance to 2 decimal places and calculate generations
+    balance_rounded = round(float(profile.token_balance), 2)
+    generations = int(balance_rounded / 2)
+
     text = (
         "📊 <b>Твой профиль</b>\n\n"
         f"🆔 ID: <code>{profile.id}</code>\n"
         f"👤 Username: {username_display}\n\n"
-        f"💰 Баланс: <b>{profile.token_balance}</b> токенов\n"
+        f"💰 Баланс: <b>{balance_rounded}</b> токенов (~{generations} генераций)\n"
         f"📅 Подписка: {profile.subscription_status_text}\n\n"
         "Пополнить баланс: /tariffs"
     )

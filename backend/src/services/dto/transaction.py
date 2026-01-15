@@ -14,9 +14,9 @@ class TransactionDTO(BaseModel):
     id: UUID
     type: TransactionType
     type_display: str
-    tokens_delta: int
+    tokens_delta: float
     tokens_delta_display: str  # "+100" or "-50"
-    balance_after: int
+    balance_after: float
     description: str | None
     invoice_id: UUID | None
     created_at: datetime

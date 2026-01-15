@@ -75,3 +75,17 @@ sa.Enum("value_one", "value_two", name="my_enum")
 Это гарантирует, что:
 - В PostgreSQL хранятся lowercase значения (`value_one`)
 - SQLAlchemy корректно маппит их на Python enum члены (`MyEnum.VALUE_ONE`)
+
+## Related Projects
+
+### Runner (`d:/Sources/Cursor/runner`)
+HHH Runner — сервис выполнения AI-треков для анализа CV и генерации откликов.
+
+**Важно:** Claude работает только с кодом проекта **pays** (бот). Для проекта **runner** Claude готовит только **спецификации** (API endpoints, форматы данных, изменения в треках). Реализация в runner выполняется отдельно.
+
+**Runner API:**
+- `POST /api/cv/enhance` — анализ CV
+- `POST /api/vacancy/apply` — генерация отклика
+- `POST /api/constructor-user` — загрузка пользовательского конструктора
+- `GET /api/constructor-user` — получение конструктора
+- `DELETE /api/constructor-user` — удаление пользовательского конструктора

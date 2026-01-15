@@ -99,7 +99,9 @@ def format_subscription_message(user: User, sub_status: dict) -> str:
 
     # Balance info
     lines.append("")
-    lines.append(f"Vash balans: <b>{user.token_balance}</b> tokenov")
+    balance_rounded = round(float(user.token_balance), 2)
+    generations = int(balance_rounded / 2)
+    lines.append(f"Vash balans: <b>{balance_rounded}</b> tokenov (~{generations} generacij)")
     lines.append(f"Stoimost prodleniya: {sub_status['renewal_price']} tokenov")
 
     # Help
@@ -217,8 +219,9 @@ async def on_renew_subscription(
 
         # Check balance first
         if user.token_balance < renewal_price:
+            balance_rounded = round(float(user.token_balance), 2)
             await callback.answer(
-                f"Недостаточно токенов. Нужно: {renewal_price}, есть: {user.token_balance}",
+                f"Недостаточно токенов. Нужно: {renewal_price}, есть: {balance_rounded}",
                 show_alert=True,
             )
             return
