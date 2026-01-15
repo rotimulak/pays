@@ -69,6 +69,14 @@ class ApplyService:
         balance = await self.token_service.check_balance(user_id)
         return balance.can_spend, balance.reason
 
+    async def check_cv_exists(self, user_id: int) -> bool:
+        """Проверить наличие загруженного CV.
+
+        Returns:
+            True если CV загружено, False иначе
+        """
+        return await self.apply_analyzer.runner.check_cv_exists(user_id)
+
     async def apply_to_vacancy(
         self,
         vacancy_url: str,

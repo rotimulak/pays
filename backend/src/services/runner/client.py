@@ -68,6 +68,15 @@ class BaseRunnerClient(ABC):
         """Скачать файл результата. Возвращает bytes или строку ошибки."""
         pass
 
+    @abstractmethod
+    async def check_cv_exists(self, user_id: int) -> bool:
+        """Проверить наличие CV пользователя.
+
+        Returns:
+            True если CV загружено, False иначе
+        """
+        pass
+
 
 class RunnerClient(BaseRunnerClient):
     """HTTP клиент для HHH Runner API."""
@@ -304,3 +313,135 @@ class RunnerClient(BaseRunnerClient):
         except Exception as e:
             logger.exception(f"Download result unexpected error: {e}")
             return str(e)
+
+    async def upload_constructor(
+        self,
+        telegram_id: int,
+        content: bytes,
+        filename: str = "constructor.txt",
+    ) -> dict | str:
+        """Загрузить пользовательский конструктор."""
+        try:
+            form = aiohttp.FormData()
+            form.add_field("telegram_id", str(telegram_id))
+            form.add_field(
+                "file",
+                content,
+                filename=filename,
+                content_type="text/plain; charset=utf-8",
+            )
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    f"{self.base_url}/api/constructor-user",
+                    data=form,
+                    headers={"X-API-Key": self.api_key},
+                    timeout=aiohttp.ClientTimeout(total=60),
+                ) as response:
+                    data = await response.json()
+
+                    if response.status == 200:
+                        return data
+
+                    detail = data.get("detail", {})
+                    if isinstance(detail, dict):
+                        error_code = detail.get("error_code", "UNKNOWN")
+                        error_msg = detail.get("message", f"HTTP {response.status}")
+                        return f"{error_code}: {error_msg}"
+                    return f"HTTP {response.status}: {detail}"
+
+        except aiohttp.ClientError as e:
+            logger.error(f"Upload constructor client error: {e}")
+            return f"{type(e).__name__}: {e}"
+        except Exception as e:
+            logger.exception(f"Upload constructor unexpected error: {e}")
+            return str(e)
+
+    async def download_constructor(self, telegram_id: int) -> dict | str:
+        """Скачать текущий конструктор (user или auto)."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{self.base_url}/api/constructor-user",
+                    params={"telegram_id": str(telegram_id)},
+                    headers={"X-API-Key": self.api_key},
+                    timeout=aiohttp.ClientTimeout(total=30),
+                ) as response:
+                    data = await response.json()
+
+                    if response.status == 200:
+                        return data
+
+                    detail = data.get("detail", {})
+                    if isinstance(detail, dict):
+                        error_code = detail.get("error_code", "UNKNOWN")
+                        error_msg = detail.get("message", f"HTTP {response.status}")
+                        return f"{error_code}: {error_msg}"
+                    return f"HTTP {response.status}: {detail}"
+
+        except aiohttp.ClientError as e:
+            logger.error(f"Download constructor client error: {e}")
+            return f"{type(e).__name__}: {e}"
+        except Exception as e:
+            logger.exception(f"Download constructor unexpected error: {e}")
+            return str(e)
+
+    async def reset_constructor(self, telegram_id: int) -> dict | str:
+        """Удалить пользовательский конструктор."""
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.delete(
+                    f"{self.base_url}/api/constructor-user",
+                    params={"telegram_id": str(telegram_id)},
+                    headers={"X-API-Key": self.api_key},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as response:
+                    data = await response.json()
+
+                    if response.status == 200:
+                        return data
+
+                    detail = data.get("detail", {})
+                    if isinstance(detail, dict):
+                        error_code = detail.get("error_code", "UNKNOWN")
+                        error_msg = detail.get("message", f"HTTP {response.status}")
+                        return f"{error_code}: {error_msg}"
+                    return f"HTTP {response.status}: {detail}"
+
+        except aiohttp.ClientError as e:
+            logger.error(f"Reset constructor client error: {e}")
+            return f"{type(e).__name__}: {e}"
+        except Exception as e:
+            logger.exception(f"Reset constructor unexpected error: {e}")
+            return str(e)
+
+    async def check_cv_exists(self, user_id: int) -> bool:
+        """Проверить наличие CV через GET /api/cv/{user_id}.
+
+        Graceful degradation: если endpoint не готов или ошибка,
+        возвращаем True чтобы не блокировать пользователей.
+        """
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    f"{self.base_url}/api/cv/{user_id}",
+                    headers={"X-API-Key": self.api_key},
+                    timeout=aiohttp.ClientTimeout(total=10),
+                ) as response:
+                    if response.status == 200:
+                        return True
+                    elif response.status == 404:
+                        return False
+                    else:
+                        # Graceful degradation: если endpoint не готов
+                        logger.warning(
+                            f"CV check returned unexpected status {response.status}, "
+                            f"allowing apply to proceed"
+                        )
+                        return True
+        except aiohttp.ClientError as e:
+            logger.warning(f"CV check connection error: {e}, allowing apply to proceed")
+            return True
+        except Exception as e:
+            logger.warning(f"CV check error: {e}, allowing apply to proceed")
+            return True
