@@ -28,12 +28,60 @@ UPLOAD_PROMPT = """
 Чтобы вернуться к автоматическому: /reset_constructor
 """.strip()
 
+UPDATE_PROMPT = """
+<b>Обновление конструктора откликов</b>
+
+Вы можете отредактировать конструктор и загрузить обновлённую версию.
+
+Ваш текущий конструктор прикреплён выше.
+Отредактируйте его и отправьте обратно (.txt или .md).
+
+Для отмены: /cancel
+""".strip()
+
 
 @router.message(Command("constructor"))
 async def cmd_constructor(message: Message, state: FSMContext) -> None:
     """Команда загрузки пользовательского конструктора."""
     await state.set_state(ConstructorStates.waiting_for_file)
     await message.answer(UPLOAD_PROMPT, parse_mode="HTML")
+
+
+@router.message(Command("update_constructor"))
+async def cmd_update_constructor(message: Message, state: FSMContext) -> None:
+    """Команда обновления конструктора - скачать текущий и загрузить новый."""
+    runner = get_runner_client()
+    result = await runner.download_constructor(telegram_id=message.from_user.id)
+
+    if isinstance(result, str):
+        if "CONSTRUCTOR_NOT_FOUND" in result:
+            await message.answer(
+                "Конструктор не найден.\n\n"
+                "Сначала загрузите резюме через /cv, "
+                "чтобы сгенерировать конструктор автоматически."
+            )
+        else:
+            await message.answer(f"Ошибка: {result}")
+        return
+
+    content = result.get("content", "")
+    constructor_type = result.get("constructor_type", "auto")
+    filename = result.get("filename", "constructor.txt")
+
+    type_label = "пользовательский" if constructor_type == "user" else "автоматический"
+
+    # Отправляем текущий конструктор
+    await message.answer_document(
+        document=BufferedInputFile(
+            content.encode("utf-8"),
+            filename=filename,
+        ),
+        caption=f"Текущий конструктор ({type_label})"
+    )
+
+    # Переходим в режим ожидания файла
+    await state.set_state(ConstructorStates.waiting_for_file)
+    await message.answer(UPDATE_PROMPT, parse_mode="HTML")
 
 
 @router.message(ConstructorStates.waiting_for_file, F.document)
