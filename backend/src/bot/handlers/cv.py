@@ -122,10 +122,19 @@ async def handle_cv_file(message: Message, state: FSMContext, session: AsyncSess
 
     # Завершаем
     if analysis_result.success:
+        next_steps = (
+            "\n\n<b>Что дальше?</b>\n"
+            "• /apply — сформировать отклик на вакансию\n"
+            "• /skills — получить рекомендации по доработке резюме от целевых вакансий\n"
+            "• /constructor — посмотреть и отредактировать конструктор откликов"
+        )
         if analysis_result.tokens_spent > 0:
-            await message.answer(f"✅ Анализ завершён! Списано: {analysis_result.tokens_spent} токен")
+            await message.answer(
+                f"✅ Анализ завершён! Списано: {analysis_result.tokens_spent} токен{next_steps}",
+                parse_mode="HTML"
+            )
         else:
-            await message.answer("✅ Анализ завершён!")
+            await message.answer(f"✅ Анализ завершён!{next_steps}", parse_mode="HTML")
 
         # Показываем предупреждение если было списание с ошибкой
         if analysis_result.error:

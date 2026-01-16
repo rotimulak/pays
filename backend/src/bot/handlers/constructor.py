@@ -42,13 +42,6 @@ UPDATE_PROMPT = """
 
 @router.message(Command("constructor"))
 async def cmd_constructor(message: Message, state: FSMContext) -> None:
-    """Команда загрузки пользовательского конструктора."""
-    await state.set_state(ConstructorStates.waiting_for_file)
-    await message.answer(UPLOAD_PROMPT, parse_mode="HTML")
-
-
-@router.message(Command("update_constructor"))
-async def cmd_update_constructor(message: Message, state: FSMContext) -> None:
     """Команда обновления конструктора - скачать текущий и загрузить новый."""
     runner = get_runner_client()
     result = await runner.download_constructor(telegram_id=message.from_user.id)

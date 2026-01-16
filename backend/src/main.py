@@ -23,7 +23,7 @@ async def set_commands(bot: Bot) -> None:
         BotCommand(command="cv", description="Анализ CV"),
         BotCommand(command="apply", description="Отклик на вакансию"),
         BotCommand(command="skills", description="Усилить резюме"),
-        BotCommand(command="update_constructor", description="Обновить конструктор"),
+        BotCommand(command="constructor", description="Обновить конструктор"),
         BotCommand(command="balance", description="Баланс"),
     ]
     await bot.set_my_commands(commands)
