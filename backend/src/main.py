@@ -7,7 +7,7 @@ from aiogram.types import BotCommand
 
 from src.bot import create_bot, create_dispatcher
 from src.bot.handlers import apply, balance, buy, constructor, cv, healthcheck, help, skills, start, trial
-from src.bot.middlewares import AuthMiddleware, CancelRunnerMiddleware, DbSessionMiddleware
+from src.bot.middlewares import AuthMiddleware, CommandResetMiddleware, DbSessionMiddleware
 from src.core.config import settings
 from src.core.logging import get_logger, setup_logging
 
@@ -29,12 +29,31 @@ async def set_commands(bot: Bot) -> None:
     await bot.set_my_commands(commands)
 
 
+async def set_bot_description(bot: Bot) -> None:
+    """Set bot description shown before /start."""
+    # Description shown in empty chat (up to 512 chars)
+    description = (
+        "AI-помощник для поиска работы на hh.ru\n\n"
+        "Что умеет бот:\n"
+        "• Анализ резюме с рекомендациями по улучшению\n"
+        "• Подбор навыков под целевые вакансии\n"
+        "• Генерация персональных откликов\n\n"
+        "Нажмите /start чтобы начать"
+    )
+    await bot.set_my_description(description=description, language_code="ru")
+
+    # Short description for profile/sharing (up to 120 chars)
+    short_description = "AI-помощник для поиска работы: анализ CV, усиление резюме, генерация откликов на hh.ru"
+    await bot.set_my_short_description(short_description=short_description, language_code="ru")
+
+
 async def on_startup(bot: Bot) -> None:
     """Startup hook."""
     try:
         await set_commands(bot)
+        await set_bot_description(bot)
     except Exception as e:
-        logger.warning(f"Failed to set commands: {e}")
+        logger.warning(f"Failed to set bot config: {e}")
     logger.info("Bot started")
 
 
@@ -48,12 +67,12 @@ async def main() -> None:
     bot = create_bot(settings.telegram_bot_token)
     dp = create_dispatcher()
 
-    # Register middlewares (order matters: db_session before auth)
+    # Register middlewares (order matters: db_session → auth → command_reset)
     dp.message.middleware(DbSessionMiddleware())
     dp.callback_query.middleware(DbSessionMiddleware())
     dp.message.middleware(AuthMiddleware())
     dp.callback_query.middleware(AuthMiddleware())
-    dp.message.middleware(CancelRunnerMiddleware())
+    dp.message.middleware(CommandResetMiddleware())
 
     # Register routers
     dp.include_router(start.router)

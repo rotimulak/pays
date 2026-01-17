@@ -132,6 +132,97 @@ def _render_txt_to_html(txt_path: Path, title: str) -> str:
 </html>"""
 
 
+@router.get("", response_class=HTMLResponse)
+async def get_legal_index() -> str:
+    """Return legal documents index page."""
+    return """<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Юридические документы | HH Helper</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            color: #333;
+            background: #fafafa;
+        }
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .doc-list {
+            list-style: none;
+            padding: 0;
+        }
+        .doc-list li {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .doc-list a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 500;
+        }
+        .doc-list a:hover {
+            text-decoration: underline;
+        }
+        .doc-desc {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1a1a1a;
+                color: #e0e0e0;
+            }
+            h1 {
+                color: #fff;
+            }
+            .subtitle, .doc-desc {
+                color: #999;
+            }
+            .doc-list li {
+                background: #2a2a2a;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+            .doc-list a {
+                color: #4da3ff;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>HH Helper</h1>
+    <p class="subtitle">Юридические документы сервиса</p>
+
+    <ul class="doc-list">
+        <li>
+            <a href="/legal/oferta">Публичная оферта</a>
+            <p class="doc-desc">Договор об оказании услуг</p>
+        </li>
+        <li>
+            <a href="/legal/privacy">Политика конфиденциальности</a>
+            <p class="doc-desc">Порядок обработки и защиты персональных данных</p>
+        </li>
+    </ul>
+</body>
+</html>"""
+
+
 @router.get("/oferta", response_class=HTMLResponse)
 async def get_oferta() -> str:
     """Return public offer agreement."""

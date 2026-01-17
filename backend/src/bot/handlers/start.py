@@ -25,7 +25,9 @@ router = Router(name="start")
 BUILD_VERSION = os.getenv("BUILD_VERSION", "dev")
 
 # URL для юридических документов
+LEGAL_URL = f"{settings.webhook_base_url}/legal"
 OFERTA_URL = f"{settings.webhook_base_url}/legal/oferta"
+PRIVACY_URL = f"{settings.webhook_base_url}/legal/privacy"
 
 
 @router.message(CommandStart())
@@ -45,7 +47,7 @@ async def cmd_start(message: Message, user: User) -> None:
             "⚠️ <b>К сожалению, сервис временно недоступен.</b>\n\n"
             "Мы уже работаем над восстановлением. "
             "Пожалуйста, попробуйте позже.\n\n"
-            f'<a href="{OFERTA_URL}">Публичная оферта</a>\n\n'
+            f'<a href="{OFERTA_URL}">Оферта</a> · <a href="{PRIVACY_URL}">Конфиденциальность</a>\n\n'
             f"<i>v{BUILD_VERSION}</i>"
         )
         await message.answer(text, parse_mode="HTML", disable_web_page_preview=True)
@@ -64,7 +66,7 @@ async def cmd_start(message: Message, user: User) -> None:
         "Shit in - Shit out: модели покажут хороший результат с реальным резюме, в котором уже проведена ваша подготовительная работа\n\n"
         "💡 <b>Рекомендуемый порядок:</b>\n"
         "Загрузить CV → Усилить компетенциями из целевых вакансий → Писать отклики\n\n"
-        f'<a href="{OFERTA_URL}">Публичная оферта</a> · <i>v{BUILD_VERSION}</i>\n'
+        f'<a href="{OFERTA_URL}">Оферта</a> · <a href="{PRIVACY_URL}">Конфиденциальность</a> · <i>v{BUILD_VERSION}</i>\n'
         f'<i>API: {settings.webhook_base_url} | Runner: {settings.runner_base_url}</i>'
     )
 
@@ -120,6 +122,23 @@ async def cmd_start(message: Message, user: User) -> None:
 @router.callback_query(F.data == "main_menu")
 async def on_main_menu(callback: CallbackQuery) -> None:
     """Return to main menu (inline navigation)."""
+    if callback.message is None:
+        await callback.answer()
+        return
+
+    try:
+        text = "Главное меню\n\nВыбери действие:"
+        await callback.message.edit_text(text, reply_markup=get_start_menu_inline())
+        await callback.answer()
+    except Exception:
+        await callback.answer()
+
+
+@router.callback_query(F.data == "back_to_menu")
+async def on_back_to_menu(callback: CallbackQuery, state: FSMContext) -> None:
+    """Return to main menu and clear FSM state."""
+    await state.clear()
+
     if callback.message is None:
         await callback.answer()
         return
