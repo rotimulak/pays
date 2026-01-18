@@ -78,6 +78,24 @@ sa.Enum("value_one", "value_two", name="my_enum")
 
 ## Related Projects
 
+### Robotest (`robotest/`)
+
+Модуль E2E тестирования бота через Telegram User API.
+
+**Назначение:** Автоматическое тестирование бота от лица реального пользователя Telegram (роботеста).
+
+**Технологии:** Telethon, pytest, pytest-asyncio
+
+**Документация:** [robotest/README.md](robotest/README.md)
+
+**Запуск:**
+```bash
+cd robotest
+pip install -e ".[dev]"
+python -m src.auth  # первый раз
+pytest scenarios/ -v
+```
+
 ### Runner (`d:/Sources/Cursor/runner`)
 HHH Runner — сервис выполнения AI-треков для анализа CV и генерации откликов.
 

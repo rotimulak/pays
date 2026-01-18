@@ -13,7 +13,8 @@
       "Bash(python check_cv_transactions.py:*)",
       "Bash(python check_cv_transactions_sql.py:*)",
       "Bash(python:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(dir /s \"d:\\Sources\\pays\\backend\\src\\services\" *.py)"
     ],
     "deny": [],
     "ask": []

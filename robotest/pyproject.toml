@@ -1,0 +1,25 @@
+[project]
+name = "robotest"
+version = "0.1.0"
+description = "E2E testing for Telegram bot via User API"
+requires-python = ">=3.11"
+
+dependencies = [
+    "telethon>=1.36.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-timeout>=2.3.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["scenarios"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

@@ -1,3 +1,4 @@
+from src.db.models.apply_feedback import ApplyFeedback, FeedbackRating
 from src.db.models.audit_log import AuditLog
 from src.db.models.invoice import Invoice, InvoiceStatus
 from src.db.models.promo_activation import PromoActivation
@@ -7,8 +8,10 @@ from src.db.models.transaction import Transaction, TransactionType
 from src.db.models.user import User
 
 __all__ = [
+    "ApplyFeedback",
     "AuditLog",
     "DiscountType",
+    "FeedbackRating",
     "Invoice",
     "InvoiceStatus",
     "PeriodUnit",

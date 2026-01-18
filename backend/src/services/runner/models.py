@@ -30,7 +30,7 @@ class BotOutput:
     """Parsed bot_output event.
 
     SSE format:
-    {"type": "bot_output", "output_type": "text", "content": "...", "timestamp": "...", "index": 5}
+    {"type": "bot_output", "output_type": "text", "content": "...", "format": "markdown", "timestamp": "...", "index": 5}
     {"type": "bot_output", "output_type": "file", "content": "...", "filename": "...", "caption": "..."}
     """
 
@@ -39,6 +39,7 @@ class BotOutput:
     filename: str | None = None  # для FILE
     caption: str | None = None  # для FILE
     index: int | None = None  # порядковый номер события
+    format: str | None = None  # "markdown" | None - формат текста для TEXT
 
     @classmethod
     def from_sse_data(cls, data: dict) -> "BotOutput | None":
@@ -54,6 +55,7 @@ class BotOutput:
                 filename=data.get("filename"),
                 caption=data.get("caption"),
                 index=data.get("index"),
+                format=data.get("format"),
             )
         except ValueError:
             return None
@@ -71,6 +73,7 @@ class StreamMessage:
     output_type: str | None = None  # "text" | "file"
     filename: str | None = None
     caption: str | None = None
+    format: str | None = None  # "markdown" | None - формат текста
     # Для track_cost — raw data
     track_cost_data: dict | None = None
 
@@ -84,6 +87,7 @@ class StreamMessage:
                 content=self.content,
                 filename=self.filename,
                 caption=self.caption,
+                format=self.format,
             )
         except ValueError:
             return None

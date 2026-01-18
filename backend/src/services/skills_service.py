@@ -182,7 +182,9 @@ class SkillsService:
 
         if output.output_type == BotOutputType.TEXT:
             if output.content:
-                await self._send_text_safe(chat_id, output.content)
+                # Конвертируем format от Runner в parse_mode для Telegram
+                parse_mode = "Markdown" if output.format == "markdown" else None
+                await self._send_text_safe(chat_id, output.content, parse_mode=parse_mode)
 
         elif output.output_type == BotOutputType.FILE and output.content and output.filename:
             await self._send_document_safe(
@@ -192,17 +194,28 @@ class SkillsService:
                 caption=output.caption,
             )
 
-    async def _send_text_safe(self, chat_id: int, text: str) -> None:
-        """Отправить текст, разбивая на части если нужно. С retry."""
+    async def _send_text_safe(
+        self,
+        chat_id: int,
+        text: str,
+        parse_mode: str | None = None,
+    ) -> None:
+        """Отправить текст, разбивая на части если нужно. С retry.
+
+        Args:
+            chat_id: ID чата
+            text: Текст сообщения
+            parse_mode: Режим парсинга ("Markdown", "MarkdownV2", "HTML" или None)
+        """
         if len(text) <= MAX_MESSAGE_LENGTH:
             await self._send_with_retry(
-                self.bot.send_message, chat_id, text
+                self.bot.send_message, chat_id, text, parse_mode=parse_mode
             )
         else:
             for i in range(0, len(text), MAX_MESSAGE_LENGTH):
                 chunk = text[i : i + MAX_MESSAGE_LENGTH]
                 await self._send_with_retry(
-                    self.bot.send_message, chat_id, chunk
+                    self.bot.send_message, chat_id, chunk, parse_mode=parse_mode
                 )
 
     async def _send_document_safe(
