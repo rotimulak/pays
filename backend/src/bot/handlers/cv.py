@@ -8,6 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Document, FSInputFile, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.keyboards import get_back_keyboard
 from src.bot.states.cv import CVStates
 from src.core.logging import get_logger
 from src.services.cv_service import CVService
@@ -65,7 +66,7 @@ async def _start_cv_flow(message: Message, state: FSMContext, session: AsyncSess
         return
 
     await state.set_state(CVStates.waiting_for_file)
-    await message.answer(UPLOAD_PROMPT, parse_mode="HTML")
+    await message.answer(UPLOAD_PROMPT, parse_mode="HTML", reply_markup=get_back_keyboard())
 
     # Отправляем инструкцию по скачиванию резюме
     try:

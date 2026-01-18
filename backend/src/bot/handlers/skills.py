@@ -7,6 +7,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.keyboards import get_back_keyboard
 from src.bot.states.skills import SkillsStates
 from src.core.logging import get_logger
 from src.services.skills_service import SKILLS_COST, SkillsService
@@ -101,7 +102,11 @@ async def cmd_skills(message: Message, state: FSMContext, session: AsyncSession)
         return
 
     await state.set_state(SkillsStates.waiting_for_urls)
-    await message.answer(PROMPT.format(cost=SKILLS_COST, max_urls=MAX_URLS))
+    await message.answer(
+        PROMPT.format(cost=SKILLS_COST, max_urls=MAX_URLS),
+        parse_mode="HTML",
+        reply_markup=get_back_keyboard(),
+    )
 
 
 @router.message(SkillsStates.waiting_for_urls, F.text)

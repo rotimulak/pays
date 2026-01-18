@@ -1,14 +1,19 @@
 """Apply to vacancy command handler."""
 
+import hashlib
 import re
+
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.bot.callbacks.feedback import FeedbackCallback
+from src.bot.keyboards import get_back_keyboard, get_feedback_keyboard
 from src.bot.states.apply import ApplyStates
 from src.core.logging import get_logger
+from src.db.models import ApplyFeedback, FeedbackRating
 from src.services.apply_service import ApplyService
 from src.services.runner import ApplyAnalyzer, get_runner_client
 from src.services.token_service import TokenService
@@ -16,6 +21,10 @@ from src.services.token_service import TokenService
 logger = get_logger(__name__)
 
 router = Router(name="apply")
+
+# In-memory storage for last apply data (user_id -> {vacancy_url, task_id})
+# In production, consider using Redis or FSM state
+_last_apply_data: dict[int, dict] = {}
 
 PROMPT = """
 💼 <b>Отклик на вакансию</b>
@@ -78,7 +87,7 @@ async def _start_apply_flow(message: Message, state: FSMContext, session: AsyncS
         return
 
     await state.set_state(ApplyStates.waiting_for_url)
-    await message.answer(PROMPT, parse_mode="HTML")
+    await message.answer(PROMPT, parse_mode="HTML", reply_markup=get_back_keyboard())
 
 
 @router.message(Command("apply"))
@@ -117,10 +126,22 @@ async def handle_vacancy_url(message: Message, state: FSMContext, session: Async
 
     # Завершаем
     if result.success:
+        # Store apply data for feedback
+        _last_apply_data[message.from_user.id] = {
+            "vacancy_url": vacancy_url,
+            "task_id": result.task_id,
+        }
+
+        # Show success message with feedback keyboard
         if result.tokens_spent > 0:
-            await message.answer(f"✅ Отклик создан! Списано: {result.tokens_spent} токен")
+            success_text = f"✅ Отклик создан! Списано: {result.tokens_spent} токен\n\nКак вам генерация?"
         else:
-            await message.answer("✅ Отклик создан!")
+            success_text = "✅ Отклик создан!\n\nКак вам генерация?"
+
+        await message.answer(
+            success_text,
+            reply_markup=get_feedback_keyboard(vacancy_url),
+        )
     elif result.error:
         # Проверяем, является ли ошибка отсутствием резюме
         error_lower = result.error.lower()
@@ -141,4 +162,68 @@ async def handle_invalid_input(message: Message) -> None:
     """Обработка невалидного ввода (не текст)."""
     await message.answer(
         f"❌ Пожалуйста, отправьте ссылку на вакансию текстом.\n\n{PROMPT}"
+    )
+
+
+def _hash_url(url: str) -> str:
+    """Create short hash from URL for verification."""
+    return hashlib.md5(url.encode()).hexdigest()[:8]
+
+
+@router.callback_query(FeedbackCallback.filter())
+async def handle_feedback(
+    callback: CallbackQuery,
+    callback_data: FeedbackCallback,
+    session: AsyncSession,
+) -> None:
+    """Handle feedback button press."""
+    user_id = callback.from_user.id
+
+    # Map rating string to enum
+    rating_map = {
+        "bad": FeedbackRating.BAD,
+        "ok": FeedbackRating.OK,
+        "great": FeedbackRating.GREAT,
+    }
+    rating = rating_map.get(callback_data.rating)
+    if not rating:
+        await callback.answer("Ошибка: неверный рейтинг")
+        return
+
+    # Get stored apply data
+    apply_data = _last_apply_data.get(user_id, {})
+    vacancy_url = apply_data.get("vacancy_url")
+    task_id = apply_data.get("task_id")
+
+    # Verify vacancy hash matches (optional security check)
+    if vacancy_url and _hash_url(vacancy_url) != callback_data.vacancy_hash:
+        vacancy_url = None  # Hash mismatch, use None
+
+    # Save feedback to database
+    feedback = ApplyFeedback(
+        user_id=user_id,
+        rating=rating,
+        vacancy_url=vacancy_url,
+        task_id=task_id,
+    )
+    session.add(feedback)
+    await session.commit()
+
+    # Clean up stored data
+    _last_apply_data.pop(user_id, None)
+
+    # Show emoji response based on rating
+    emoji_response = {
+        FeedbackRating.BAD: "Спасибо за честность! Будем улучшаться 🙏",
+        FeedbackRating.OK: "Спасибо за отзыв! 👍",
+        FeedbackRating.GREAT: "Рады, что понравилось! 🎉",
+    }
+
+    await callback.answer(emoji_response[rating])
+
+    # Update message to show selected feedback
+    emoji_display = {"bad": "🤮", "ok": "😐", "great": "🤩"}
+    await callback.message.edit_text(
+        f"{callback.message.text}\n\nВаша оценка: {emoji_display[callback_data.rating]}",
+        reply_markup=None,
     )

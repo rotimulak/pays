@@ -58,3 +58,12 @@ def get_start_menu_inline() -> InlineKeyboardMarkup:
             ],
         ]
     )
+
+
+def get_back_keyboard() -> InlineKeyboardMarkup:
+    """Create keyboard with single Back button for navigation."""
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [InlineKeyboardButton(text="◀️ Назад", callback_data="back_to_menu")],
+        ]
+    )

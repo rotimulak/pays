@@ -5,6 +5,7 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, Document, Message
 
+from src.bot.keyboards import get_back_keyboard
 from src.bot.states.constructor import ConstructorStates
 from src.core.logging import get_logger
 from src.services.runner import get_runner_client
@@ -74,7 +75,7 @@ async def cmd_constructor(message: Message, state: FSMContext) -> None:
 
     # Переходим в режим ожидания файла
     await state.set_state(ConstructorStates.waiting_for_file)
-    await message.answer(UPDATE_PROMPT, parse_mode="HTML")
+    await message.answer(UPDATE_PROMPT, parse_mode="HTML", reply_markup=get_back_keyboard())
 
 
 @router.message(ConstructorStates.waiting_for_file, F.document)
